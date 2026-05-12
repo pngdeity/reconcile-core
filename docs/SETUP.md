@@ -11,6 +11,8 @@ Ensure the following tools are installed and available in your `$PATH`:
 *   **`gws`**: Google Workspace CLI.
     *   *Action:* Install via your preferred method and ensure the binary is named `gws`.
 *   **Python 3.14+**: The project runtime.
+    *   *uv-managed:* `uv python install 3.14` (recommended, works cross-platform)
+    *   *Arch Linux:* `sudo pacman -S python`
 
 ## 2. Authentication & Authorization
 
@@ -35,6 +37,41 @@ The tool processes offline data archives. You must manually request these from y
 2.  Select **"Want something in particular?"** and check **"Connections"**.
 3.  Once the archive arrives (usually within 10 minutes), extract `Connections.csv`.
 
+### Discord
+1.  Open Discord, go to **Settings** (gear icon) > **Privacy & Safety**.
+2.  Scroll to the bottom and click **"Request all of my Data"**.
+3.  Wait for the email from Discord (can take up to 30 days, typically arrives in 1-3 days).
+4.  Download the data package and extract it. The file you need is `relationships.json`.
+
+### Matrix (Element)
+**Option A — Element export (automatic detection):**
+1.  Open Element, go to **Settings** > **Help & About**.
+2.  Click **"Export Account Data"** to download a JSON file.
+3.  The adapter auto-detects the `m.direct` entries from this export.
+
+**Option B — Manual list (fallback):**
+Create a JSON file with the following format:
+```json
+[
+  {"mxid": "@alice:matrix.org", "display_name": "Alice"},
+  {"mxid": "@bob:matrix.org"}
+]
+```
+If `display_name` is omitted, the adapter derives it from the MXID.
+
+### Generic CSV
+For any source not covered above, create a CSV file with these column headers (case-insensitive):
+| Column | Maps To | Required |
+|--------|---------|----------|
+| `Name` / `Display Name` | `display_name` | **Yes** |
+| `Email` | `emails` | No |
+| `Phone` | `phones` | No |
+| `URL` | `urls` | No |
+| `IM` | `imClients` | No |
+| Any other columns | `raw_metadata` | No |
+
+If no `Name` column is found, the adapter will raise an error listing the available columns. If no `Email` is present, the adapter derives `source_id` from the display name.
+
 ## 4. First-Run Guide
 
 1.  **Sync Environment**: Ensure dependencies are locked and the project is installed in editable mode.
@@ -43,11 +80,18 @@ The tool processes offline data archives. You must manually request these from y
     ```
 2.  **Test Run (Dry Run)**: Preview changes without writing to Google Contacts or your local map.
     ```bash
-    uv run python -m reconcile_core.main path/to/your/Connections.csv --dry-run
+    # LinkedIn
+    uv run python -m reconcile_core.main path/to/Connections.csv -p linkedin --dry-run
+    # Discord
+    uv run python -m reconcile_core.main path/to/relationships.json -p discord --dry-run
+    # Matrix
+    uv run python -m reconcile_core.main path/to/matrix_export.json -p matrix --dry-run
+    # Generic CSV
+    uv run python -m reconcile_core.main path/to/contacts.csv -p generic --dry-run
     ```
 3.  **Active Reconciliation**: Apply changes and map identities.
     ```bash
-    uv run python -m reconcile_core.main path/to/your/Connections.csv
+    uv run python -m reconcile_core.main path/to/Connections.csv -p linkedin
     ```
 
 ## 5. Persistence Note
