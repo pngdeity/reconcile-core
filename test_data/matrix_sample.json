@@ -1,0 +1,5 @@
+[
+  {"mxid": "@alice:matrix.org", "display_name": "Alice"},
+  {"mxid": "@bob:matrix.org", "display_name": "Bob"},
+  {"mxid": "@charlie:matrix.org"}
+]

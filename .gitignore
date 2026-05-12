@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+.pytest_cache/
+
+# Project Specific
+*.db
+identities.db
+audit.log
+
+# Version
+.python-version
+
+# OS
+.DS_Store

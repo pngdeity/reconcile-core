@@ -1,0 +1,4 @@
+Name,Email,Phone,URL,IM,Company
+Alice,alice@example.com,+1-555-0100,https://alice.dev,@alice:matrix.org,Acme
+Bob Smith,bob@example.com,,,,
+Charlie,,,+1-555-0200,@charlie:discord,

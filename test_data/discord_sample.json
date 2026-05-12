@@ -1,0 +1,5 @@
+[
+  {"id": "123456789012345678", "type": 1, "user": {"username": "friend1", "discriminator": "1234", "id": "123456789012345678"}},
+  {"id": "987654321098765432", "type": 1, "user": {"username": "friend2", "discriminator": "0", "id": "987654321098765432"}},
+  {"id": "111111111111111111", "type": 2, "user": {"username": "blockeduser", "discriminator": "5678", "id": "111111111111111111"}}
+]
