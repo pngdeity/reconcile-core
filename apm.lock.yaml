@@ -1,0 +1,22 @@
+lockfile_version: '1'
+generated_at: '2026-05-13T12:46:04.129519+00:00'
+apm_version: 0.13.0
+dependencies:
+- repo_url: _local/development-practices
+  package_type: apm_package
+  deployed_files:
+  - .agents/skills/conventional-commits
+  - .agents/skills/technical-integrity
+  - .github/instructions/code-standards.instructions.md
+  - .github/instructions/engineering-workflow.instructions.md
+  - .github/instructions/git-standards.instructions.md
+  deployed_file_hashes:
+    .github/instructions/code-standards.instructions.md: sha256:b4e202e7898bdeda31475e927fd4dc1be91fad8528d31634d9625b8450456f7e
+    .github/instructions/engineering-workflow.instructions.md: sha256:6729c85895f2b88706eb2fdf02a23771b2886145dc5d86c7bd0c4dcb9495f831
+    .github/instructions/git-standards.instructions.md: sha256:e0e93bb30b34bdbff842a16d453242238d59563123c77835b2a09855ba3307ab
+  source: local
+  local_path: /home/nathan/repos/pngdeity/apm-user-repository/packages/development-practices
+local_deployed_files:
+- .github/instructions/reconcile-core.instructions.md
+local_deployed_file_hashes:
+  .github/instructions/reconcile-core.instructions.md: sha256:787934595ab360404dc85c8651226ef5b3aada2a4647ebc60f8ca26a56da7ddf

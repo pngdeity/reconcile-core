@@ -15,3 +15,17 @@ audit.log
 
 # OS
 .DS_Store
+
+
+# APM dependencies
+apm_modules/
+
+# APM generated files
+.agents/
+.opencode/
+.github/instructions/
+.github/prompts/
+.github/agents/
+.github/hooks/
+AGENTS.md
+GEMINI.md

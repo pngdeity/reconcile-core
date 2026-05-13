@@ -1,3 +1,7 @@
+---
+description: reconcile-core ETL pipeline conventions
+applyTo: "**"
+---
 # AGENTS.md: `reconcile-core`
 
 ETL pipeline to reconcile social identities (LinkedIn, Discord, Matrix, Generic CSV) into Google Contacts via the `gws` CLI.
@@ -90,12 +94,3 @@ To add a new platform adapter:
 - **Stale-write risk:** Loader sends full merged field lists on update — a field added by another client between fetch and PATCH may be clobbered. Etag guards whole-contact conflicts only.
 - **Handles not reconciled:** `SocialHandle` field in `StandardContact` exists but is not processed by `Reconciler.reconcile()` or displayed in the CLI diff table.
 - **Discord adapter:** Returns empty generator on JSON parse errors rather than raising `ValueError` — silent data loss possible.
-
-## Environment
-
-- **Runtime:** Python 3.14+, managed with `uv`
-- **Commands:** Always prefix with `uv run` (e.g. `uv run pytest`, `uv run python -m reconcile_core.main`)
-- **Dependencies:** Use `uv add <pkg>` / `uv add --dev <pkg>` — never edit `pyproject.toml` manually
-- **Lockfile:** `uv.lock` is source of truth; `uv sync` to reconcile
-- **External dep:** `gws` CLI must be in PATH and authenticated (`gws auth login`)
-- **DB path:** `$XDG_DATA_HOME/reconcile-core/identities.db` (default `~/.local/share/reconcile-core/`)
