@@ -6,7 +6,7 @@ Takes exports from LinkedIn, Discord, Matrix, or generic CSV sources, compares
 them against your Google Contacts, and applies safe additions with manual
 conflict resolution — never overwriting without your confirmation.
 
-## Supported Platforms
+## Supported platforms
 
 | Platform | Source Format | Adapter |
 |----------|-------------|---------|
@@ -20,9 +20,7 @@ conflict resolution — never overwriting without your confirmation.
 - **Python 3.14+** with [uv](https://docs.astral.sh/uv/)
 - **[gws](https://github.com/nickvourd/gws)** CLI authenticated to Google (`gws auth login`)
 
-See [docs/SETUP.md](docs/SETUP.md) for full onboarding.
-
-## Quick Start
+## Quick start
 
 ```bash
 uv sync
@@ -43,7 +41,7 @@ uv run python -m reconcile_core.main matrix.json -p matrix
 uv run python -m reconcile_core.main contacts.csv -p generic
 ```
 
-## How It Works
+## Operation
 
 1. **Extract** — Adapters parse platform-specific exports into a common `StandardContact` model
 2. **Map** — SQLite identity map links platform IDs to Google `resourceName` values, with fuzzy name matching fallback
@@ -57,9 +55,3 @@ adapters/   -->  reconciler.py  -->  loader.py  -->  google_adapter.py  -->  gws
                     |                                        |
                database.py                              Google Contacts
 ```
-
-See [AGENTS.md](AGENTS.md) for development conventions and the full adapter contract.
-
-## License
-
-MIT. See [LICENSE](LICENSE).
