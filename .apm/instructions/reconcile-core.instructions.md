@@ -21,7 +21,7 @@ Trust but verify. Claims in AGENTS.md are **assertions about the codebase**, not
 3. **Startup checklist** — run these at session open:
    - `rg choices src/reconcile_core/main.py` — does it match the `--platform` list below?
    - `rg "class.*Error" src/reconcile_core/google_adapter.py src/reconcile_core/loader.py` — do error classes match the error conventions table?
-   - `uv run pytest --collect-only -q | tail -1` — test count should be 112.
+   - `uv run pytest --collect-only -q | tail -1` — test count should be 120.
 4. **Context file inventory.** If any of these files are missing or stale, note it:
    - `docs/AGENT-ONBOARDING.md` — **start here**: bootstrap, system map, invariants, and the discovery-gap backlog.
    - `docs/RECONCILE-CORE-HANDOFF.md` — detailed technical spec.
@@ -39,6 +39,7 @@ These override generic inherited guidance that does not apply here:
 - **Plan documents live in-repo under `docs/`.** The inherited `~/.gemini/PLANS.md` path is machine-specific; use `docs/` instead (see `docs/CONSOLIDATION-PLAN.md`).
 - **Only `AGENTS.md` exists as agent context.** There are no `CONTEXT.md`, `GEMINI.md`, `CLAUDE.md`, or `.codex`/`CODEX.md` files here.
 - **Use `rg` and `fd`.** `grep` is unavailable/denied in some agent environments.
+- **CI runs on push/PR** (`.github/workflows/ci.yml`): `uv sync --frozen`, `uv run ruff check src tests`, `uv run pytest -q`. The lint rule set is pinned in `pyproject.toml` (`[tool.ruff.lint] select`) so a ruff upgrade cannot silently change what passes.
 
 ## Quick Start
 
@@ -85,7 +86,7 @@ uv run python -m reconcile_core.main <file> -p <linkedin|discord|matrix|generic>
 | `store/` | Canonical contacts store (source of truth): `migrations/*.sql`, `migrate.py` runner, `store.py` helpers, `labels.py` vocabulary, `bridge.py` (StandardContact <-> store), `import_db.py` (legacy-store import), `backup.py` (snapshot/restore/verify via `VACUUM INTO`). Default DB path is repo-local `var/contacts.db` (`RECONCILE_CORE_DB` overrides; git-ignored). |
 | `io/` | Google Contacts CSV projection: `google_csv.py` (`import_contacts`, `export_contacts`) |
 | `profile/drumline/` | Illini Drumline domain profile: `migrations/0002_drumline_outreach.sql`, `migrate.py` (core+profile migrations), `import_drumline.py`, `audition_members.py`, `name_resolutions.py`, `import_master.py`, `export_members.py`, `needs_live_email.py`, `config.py` (PII configs in git-ignored `var/drumline/`). Single CLI: `python -m reconcile_core.profile.drumline <migrate\|import-drumline\|audition-members\|import-master\|name-resolutions\|export-members\|needs-live-email>`. Refresh order: migrations → import-drumline → audition-members → import-master → name-resolutions → export-members (import-master overwrites the outreach overlay); `needs-live-email` is a derived report run last. |
-| `test_data/` | Sample files for each adapter (no PII) |
+| `test_data/` | Sample files for each adapter plus `corpus/` — the no-PII golden corpus driving `tests/test_corpus.py` (multi-platform convergence, idempotency, collision surfacing, Google projection round-trip). |
 | `tests/` | Test files mirror `src/reconcile_core/` structure |
 
 ## Error Conventions

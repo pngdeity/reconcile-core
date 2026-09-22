@@ -146,6 +146,7 @@ seed (the dated backup is the surviving copy); `drumline-members.csv` is an
 | `main.py` | Legacy Google-API reconcile loop (`ADAPTER_CLASSES`, `fuzzy_match_name`) |
 | `profile/drumline/` | Illini Drumline profile: overlay migration, importers, name resolutions, member export, config |
 | `adapters/` | LinkedIn, Discord, Matrix, Generic CSV |
+| `test_data/corpus/` | No-PII golden corpus (C4) driving `tests/test_corpus.py`: multi-platform convergence, idempotency, collision surfacing, Google projection round-trip |
 
 Store schema (entities · external_refs · contact_points · addresses · aliases ·
 segments · segment_members · decision_state · external_status · audit_log ·
@@ -203,8 +204,8 @@ apm compile                      # if you touched .apm/instructions/**
 
 A change is complete when: tests pass, lint is clean, docs you invalidated are
 fixed, and (repo policy) commits are signed (`git commit -S`) with a
-semantic message. There is **no CI yet** (gap D6) and pushing requires
-confirmation.
+semantic message. CI (`.github/workflows/ci.yml`) runs the same lint and test
+commands on push/PR; pushing still requires confirmation.
 
 ---
 
@@ -234,7 +235,7 @@ work in small signed commits and update this doc as you go.
 | **D3** | One-command bootstrap | `scripts/bootstrap.sh` (or Makefile) runs `uv sync → apm compile → migrate → seed demo → pytest`; `docs/DATA.md` documents store provenance + the illini copy command | M |
 | **D4** | No-PII demo seed | `seed --demo` loads a synthetic store from `test_data/`; `profile.drumline config --check` fails loudly on missing configs; example config template bundled | M |
 | **D5** | Capture domain invariants | No-PII `docs/PROVENANCE.md` (or profile README section) documenting §3 items with cross-repo pointers; `profile.drumline refresh` runs the ordered pipeline in code | M |
-| **D6** | CI | GitHub Actions job runs `ruff check` + `pytest` on push/PR; badge in README | S |
+| **D6** | CI **(done)** | GitHub Actions job runs `ruff check` + `pytest` on push/PR; badge in README | S |
 | **D7** | Configuration reference | Document `RECONCILE_CORE_DB`, `RECONCILE_CORE_DRUMLINE_CONFIG`, and default paths (fixed by ADR-0002) | S |
 | **D8** | Migration guide | `docs/MIGRATIONS.md` (or store README section): authoring rules, `extra_dirs`, baseline re-stamp rationale, `IF NOT EXISTS` requirement | S |
 | **D9** | `gws` clarity | README states the unified path needs no `gws` unless syncing to Google | S |
