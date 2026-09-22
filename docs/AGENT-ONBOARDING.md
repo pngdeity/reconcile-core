@@ -66,7 +66,7 @@ apm compile                         # APM CLI (gap D1); not required to build or
 
 # 2. Dependencies + test baseline
 uv sync
-uv run pytest -q                    # expected: 93 passed
+uv run pytest -q                    # all tests pass
 
 # 3. Create/refresh the store
 uv run python -m reconcile_core migrate
@@ -191,7 +191,7 @@ unresolved_identities) is defined in
 ## 5. Dev loop & definition of done
 
 ```bash
-uv run pytest -q                 # 93 passing
+uv run pytest -q                 # all tests pass
 uv run ruff check src tests      # must be clean
 apm compile                      # if you touched .apm/instructions/**
 ```

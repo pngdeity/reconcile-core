@@ -21,7 +21,7 @@ Trust but verify. Claims in AGENTS.md are **assertions about the codebase**, not
 3. **Startup checklist** — run these at session open:
    - `rg choices src/reconcile_core/main.py` — does it match the `--platform` list below?
    - `rg "class.*Error" src/reconcile_core/google_adapter.py src/reconcile_core/loader.py` — do error classes match the error conventions table?
-   - `uv run pytest --collect-only -q | tail -1` — test count should be 93.
+   - `uv run pytest --collect-only -q | tail -1` — test count should be 101.
 4. **Context file inventory.** If any of these files are missing or stale, note it:
    - `docs/AGENT-ONBOARDING.md` — **start here**: bootstrap, system map, invariants, and the discovery-gap backlog.
    - `docs/RECONCILE-CORE-HANDOFF.md` — detailed technical spec.
@@ -43,7 +43,7 @@ These override generic inherited guidance that does not apply here:
 
 ```bash
 uv sync                                          # install dependencies
-uv run pytest                                    # full test suite (93 tests)
+uv run pytest                                    # full test suite
 uv run pytest tests/test_adapters.py -k test_linkedin  # single test
 uv run python -m reconcile_core --help           # unified CLI
 ```

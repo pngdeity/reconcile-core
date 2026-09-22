@@ -1,6 +1,6 @@
 # CONSOLIDATION-PLAN.md — Option B: `reconcile-core` as the umbrella
 
-**Status:** proposed (not started)
+**Status:** active — B0–B6 + audition/needs-live-email done; B7 blocked (Google cooldown). See §13.
 **Created:** 2026-09-21
 **Origin:** Illini Drumline contacts project (`~/repos/pngdeity/active/illini-drumline-contacts-alumni`)
 decentered from its deadline; its normalized SQLite store is proposed as the
@@ -11,7 +11,7 @@ master data layer for `reconcile-core`.
 - `reconcile-core` is Python **3.14** (installed: 3.14.7), deps = `rich` only, MIT.
 - `gws` CLI present at `/usr/bin/gws`.
 - `AGENTS.md` is **APM-generated** from `.apm/instructions/` — edit the sources and run `apm compile`, never hand-edit.
-- Local branch is **1 commit behind** `origin/main` (`c770245 Update README.md`).
+- Local branch is in sync with `origin/main`.
 - Existing persistence: `SQLitePersistence` (`identity_map`, `audit_log`, `unresolved_identities`) at `$XDG_DATA_HOME/reconcile-core/identities.db`.
 
 ## 2. Target architecture

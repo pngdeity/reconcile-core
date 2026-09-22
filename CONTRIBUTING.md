@@ -13,7 +13,7 @@ Then read it first. What follows is the contributor-facing subset.
 ```bash
 apm compile      # regenerate AGENTS.md (generated, git-ignored)
 uv sync          # install dependencies
-uv run pytest    # all 47 tests must pass
+uv run pytest    # all tests must pass
 ```
 
 Never edit `pyproject.toml` or `uv.lock` manually. Use `uv add` / `uv add --dev`.
