@@ -1,0 +1,54 @@
+# Drumline profile
+
+Domain layer for the Illini Drumline, on top of the generic contacts store.
+
+## What it does
+
+- **Migrations** (`migrations/0002_drumline_outreach.sql`): adds the
+  `drumline_outreach` per-person status overlay. Applied via
+  `reconcile_core.profile.drumline.migrate` alongside the core migrations.
+- **`import_drumline`**: links every `Tracker.csv` row to an entity
+  (`tracker_id`), creates entities for Tracker-only persons, adds them to the
+  `illini-drumline-alumni` segment, applies explicit entity merges, and imports
+  decision state from the routing configs.
+- **`name_resolutions`**: applies the versioned manual name resolutions
+  (field overrides, aliases, verification sync).
+- **`import_master`**: one-time seed of `master_person_id` refs, primary email,
+  and the `drumline_outreach` overlay from the legacy master CSV.
+- **`export_members`**: generates the person-level `drumline-members.csv`.
+
+## PII
+
+`Tracker.csv`, the legacy master CSV, and all `manual_*` JSON configs contain
+real names and addresses, so they are **not** in this repository. The configs
+are read from the repo-local, git-ignored `var/drumline/` (override with
+`--config-dir` or `RECONCILE_CORE_DRUMLINE_CONFIG`); data paths are passed with
+`--tracker` / `--input` / `--out`.
+
+## Usage
+
+Refresh order matters: `import-master` overwrites the outreach overlay, so run
+it **before** `name-resolutions`.
+
+```bash
+# core + drumline migrations
+uv run python -m reconcile_core.profile.drumline migrate --db var/contacts.db
+
+# membership + decision state
+uv run python -m reconcile_core.profile.drumline import-drumline \
+    --tracker /path/Tracker.csv --db var/contacts.db
+
+# one-time outreach seed from the legacy master (before name-resolutions)
+uv run python -m reconcile_core.profile.drumline import-master \
+    --input /path/drumline-master-v2.csv --db var/contacts.db
+
+# manual name resolutions
+uv run python -m reconcile_core.profile.drumline name-resolutions --db var/contacts.db
+
+# generate the member list
+uv run python -m reconcile_core.profile.drumline export-members \
+    --out var/drumline-members.csv --db var/contacts.db
+```
+
+`uv run pytest -q tests/test_drumline_profile.py` covers all of the above with
+synthetic, no-PII fixtures.

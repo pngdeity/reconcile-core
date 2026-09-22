@@ -16,6 +16,7 @@ import argparse
 import re
 import sqlite3
 import sys
+from collections.abc import Iterable
 from pathlib import Path
 
 from .store import default_db_path
@@ -39,15 +40,23 @@ def connect(db_path: Path | str) -> sqlite3.Connection:
     return conn
 
 
-def discover() -> list[tuple[int, str, Path]]:
+def discover(
+    extra_dirs: Iterable[Path | str] | None = None,
+) -> list[tuple[int, str, Path]]:
+    """Discover migrations in the core dir plus any profile dirs (sorted by version)."""
+    directories = [MIGRATIONS_DIR] + [Path(d) for d in (extra_dirs or [])]
     found: list[tuple[int, str, Path]] = []
-    for path in sorted(MIGRATIONS_DIR.glob("*.sql")):
-        match = MIGRATION_RE.match(path.name)
-        if not match:
-            raise ValueError(
-                f"Bad migration filename (expected NNNN_name.sql): {path.name}"
-            )
-        found.append((int(match.group(1)), match.group(2), path))
+    for directory in directories:
+        if not directory.exists():
+            continue
+        for path in sorted(directory.glob("*.sql")):
+            match = MIGRATION_RE.match(path.name)
+            if not match:
+                raise ValueError(
+                    f"Bad migration filename (expected NNNN_name.sql): {path.name}"
+                )
+            found.append((int(match.group(1)), match.group(2), path))
+    found.sort(key=lambda item: item[0])
     versions = [v for v, _, _ in found]
     if len(versions) != len(set(versions)):
         raise ValueError(f"Duplicate migration versions: {versions}")
@@ -74,14 +83,17 @@ def apply_migration(
         )
 
 
-def apply_migrations(db_path: Path | str | None = None) -> int:
+def apply_migrations(
+    db_path: Path | str | None = None,
+    extra_dirs: Iterable[Path | str] | None = None,
+) -> int:
     """Apply all pending migrations; return the resulting schema version."""
     path = Path(db_path) if db_path is not None else default_db_path()
     path.parent.mkdir(parents=True, exist_ok=True)
     conn = connect(path)
     try:
         applied = applied_versions(conn)
-        pending = [(v, n, p) for v, n, p in discover() if v not in applied]
+        pending = [(v, n, p) for v, n, p in discover(extra_dirs) if v not in applied]
         for version, name, migration_path in pending:
             apply_migration(conn, version, name, migration_path)
         return max(applied_versions(conn)) if applied_versions(conn) else 0
@@ -89,13 +101,16 @@ def apply_migrations(db_path: Path | str | None = None) -> int:
         conn.close()
 
 
-def status(db_path: Path | str | None = None) -> list[tuple[int, str, bool]]:
+def status(
+    db_path: Path | str | None = None,
+    extra_dirs: Iterable[Path | str] | None = None,
+) -> list[tuple[int, str, bool]]:
     """Return (version, name, applied) for every discovered migration."""
     path = Path(db_path) if db_path is not None else default_db_path()
     conn = connect(path)
     try:
         applied = applied_versions(conn)
-        return [(v, n, v in applied) for v, n, _ in discover()]
+        return [(v, n, v in applied) for v, n, _ in discover(extra_dirs)]
     finally:
         conn.close()
 
