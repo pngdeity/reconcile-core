@@ -1,5 +1,7 @@
 # reconcile-core
 
+[![CI](https://github.com/pngdeity/reconcile-core/actions/workflows/ci.yml/badge.svg)](https://github.com/pngdeity/reconcile-core/actions/workflows/ci.yml)
+
 ETL pipeline that reconciles fragmented social identities into a canonical
 SQLite contacts store. Exports from LinkedIn, Discord, Matrix, or generic CSV
 sources are ingested and merged into the store; Google Contacts is one
