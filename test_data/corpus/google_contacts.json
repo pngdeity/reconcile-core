@@ -1,0 +1,40 @@
+[
+  {
+    "ID": "1",
+    "First Name": "Ada",
+    "Middle Name": "M",
+    "Last Name": "Lovelace",
+    "Nickname": "Ada",
+    "Notes": "note, with comma",
+    "Phonetic First Name": "Ayda",
+    "E-mail 1 - Label": "Home",
+    "E-mail 1 - Value": "ada@example.com",
+    "Phone 1 - Label": "Mobile",
+    "Phone 1 - Value": "+15550100",
+    "Website 1 - Label": "LinkedIn",
+    "Website 1 - Value": "https://linkedin.com/in/ada-lovelace",
+    "Custom Field 2 - Label": "GitHub",
+    "Custom Field 2 - Value": "adal"
+  },
+  {
+    "ID": "2",
+    "First Name": "Grace",
+    "Last Name": "Hopper",
+    "Address 1 - Street": "2 Compiler Ct",
+    "Address 1 - City": "Arlington",
+    "Phone 2 - Label": "Home",
+    "Website 2 - Label": "Profile"
+  },
+  {
+    "ID": "3",
+    "Organization Name": "Example Org",
+    "Organization Title": "Support",
+    "E-mail 1 - Label": "Work",
+    "E-mail 1 - Value": "support@example.org"
+  },
+  {
+    "ID": "4",
+    "E-mail 1 - Label": "Work",
+    "E-mail 1 - Value": "help@example.org"
+  }
+]

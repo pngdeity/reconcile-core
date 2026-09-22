@@ -1,0 +1,17 @@
+[
+  {
+    "id": "100000000000000001",
+    "type": 1,
+    "user": { "id": "100000000000000001", "username": "ada_l", "discriminator": "0" }
+  },
+  {
+    "id": "100000000000000002",
+    "type": 1,
+    "user": { "id": "100000000000000002", "username": "grace.h", "discriminator": "1234" }
+  },
+  {
+    "id": "100000000000000003",
+    "type": 2,
+    "user": { "id": "100000000000000003", "username": "blocked.user", "discriminator": "9999" }
+  }
+]

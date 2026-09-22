@@ -1,0 +1,193 @@
+{
+  "counts": {
+    "addresses": 0,
+    "aliases": 0,
+    "contact_points": 15,
+    "decision_state": 0,
+    "entities": 8,
+    "external_refs": 10,
+    "segment_members": 0,
+    "segments": 0
+  },
+  "entities": [
+    {
+      "display_name": "ada_l",
+      "points": [
+        [
+          "handle",
+          "ada_l",
+          "discord"
+        ]
+      ],
+      "refs": [
+        [
+          "discord",
+          "100000000000000001"
+        ]
+      ],
+      "type": "person"
+    },
+    {
+      "display_name": "grace.h#1234",
+      "points": [
+        [
+          "handle",
+          "grace.h#1234",
+          "discord"
+        ]
+      ],
+      "refs": [
+        [
+          "discord",
+          "100000000000000002"
+        ]
+      ],
+      "type": "person"
+    },
+    {
+      "display_name": "Grace Hopper",
+      "points": [
+        [
+          "email",
+          "grace@example.com",
+          ""
+        ],
+        [
+          "phone",
+          "+1-555-0200",
+          ""
+        ],
+        [
+          "url",
+          "https://www.linkedin.com/in/grace-hopper",
+          ""
+        ]
+      ],
+      "refs": [
+        [
+          "generic",
+          "GRACE@EXAMPLE.COM"
+        ],
+        [
+          "linkedin",
+          "grace-hopper"
+        ]
+      ],
+      "type": "person"
+    },
+    {
+      "display_name": "Ada Lovelace",
+      "points": [
+        [
+          "email",
+          "ada@example.com",
+          ""
+        ],
+        [
+          "handle",
+          "@ada:chat.example",
+          "im"
+        ],
+        [
+          "phone",
+          "+1-555-0100",
+          ""
+        ],
+        [
+          "url",
+          "https://ada.example",
+          ""
+        ],
+        [
+          "url",
+          "https://www.linkedin.com/in/ada-lovelace",
+          ""
+        ]
+      ],
+      "refs": [
+        [
+          "generic",
+          "ada@example.com"
+        ],
+        [
+          "linkedin",
+          "ada-lovelace"
+        ]
+      ],
+      "type": "person"
+    },
+    {
+      "display_name": "Hedy Lamarr",
+      "points": [
+        [
+          "email",
+          "hedy@example.com",
+          ""
+        ],
+        [
+          "phone",
+          "+1-555-0300",
+          ""
+        ]
+      ],
+      "refs": [
+        [
+          "generic",
+          "hedy@example.com"
+        ]
+      ],
+      "type": "person"
+    },
+    {
+      "display_name": "Alan Turing",
+      "points": [
+        [
+          "url",
+          "https://www.linkedin.com/in/alan-turing",
+          ""
+        ]
+      ],
+      "refs": [
+        [
+          "linkedin",
+          "alan-turing"
+        ]
+      ],
+      "type": "person"
+    },
+    {
+      "display_name": "Nadia",
+      "points": [
+        [
+          "handle",
+          "@nadia:matrix.example",
+          "im"
+        ]
+      ],
+      "refs": [
+        [
+          "matrix",
+          "@nadia:matrix.example"
+        ]
+      ],
+      "type": "person"
+    },
+    {
+      "display_name": "omar",
+      "points": [
+        [
+          "handle",
+          "@omar:matrix.example",
+          "im"
+        ]
+      ],
+      "refs": [
+        [
+          "matrix",
+          "@omar:matrix.example"
+        ]
+      ],
+      "type": "person"
+    }
+  ]
+}
