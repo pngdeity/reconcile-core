@@ -1,0 +1,222 @@
+# Agent Onboarding & Discovery Guide
+
+**Audience:** an AI agent (or developer) starting work inside `reconcile-core`
+only, with no prior context.
+**Purpose:** get you productive in minutes, tell you what you must not break,
+and hand you a concrete backlog for closing the remaining discovery gaps.
+
+> Trust but verify. Every command and claim here is checkable; if code and this
+> doc disagree, the code wins, and fixing the doc is part of your change.
+
+---
+
+## 0. 30-second orientation
+
+`reconcile-core` reconciles fragmented social identities (LinkedIn, Discord,
+Matrix, generic CSV) into a **canonical SQLite contacts store**. The store is the
+source of truth; Google Contacts is one more adapter/projection, not the master.
+
+Three CLI surfaces exist:
+
+| Surface | Command | Status |
+| --- | --- | --- |
+| Unified (preferred) | `python -m reconcile_core <command>` | current |
+| Drumline profile | `python -m reconcile_core.profile.drumline <command>` | current (domain profile) |
+| Legacy Google-API loop | `python -m reconcile_core.main <file> -p <platform>` | retained |
+
+Full design: `docs/CONSOLIDATION-PLAN.md` (phases B0–B7 and the phase log in §13).
+
+---
+
+## 1. Bootstrap: make it runnable
+
+A fresh clone is **inert**: agent context, the store, and the drumline configs are
+all git-ignored. Do these in order.
+
+```bash
+cd <reconcile-core>                 # e.g. ~/repos/pngdeity/incubating/reconcile-core
+
+# 1. Agent context (AGENTS.md is generated, not tracked)
+apm compile                         # requires the `apm` CLI; see gap D1 if it fails
+
+# 2. Dependencies + test baseline
+uv sync
+uv run pytest -q                    # expected: 93 passed
+
+# 3. Create/refresh the store
+uv run python -m reconcile_core migrate
+uv run python -m reconcile_core migrate --profile drumline   # adds the drumline overlay
+```
+
+### Getting data into the store
+
+The real store is git-ignored at `var/contacts.db`. Two options:
+
+**Option A — import the real legacy store** (cross-repo; contains PII, stays local):
+
+```bash
+ILL=~/repos/pngdeity/active/illini-drumline-contacts-alumni
+uv run python -m reconcile_core.store.import_db --source "$ILL/working/contacts.db"
+```
+
+This re-stamps `schema_version` to this package's baseline and leaves unowned
+tables (e.g. `drumline_outreach`) as pending migrations. See §3.
+
+**Option B — start empty.** `migrate` already gives you a usable store; write
+your own with `ingest` (see §5).
+
+### Drumline profile configs (PII, git-ignored)
+
+`var/drumline/` must contain the curated configs. Copy them from the illini repo:
+
+```bash
+mkdir -p var/drumline
+ILL=~/repos/pngdeity/active/illini-drumline-contacts-alumni
+cp "$ILL"/working/{manual_entity_merges,manual_name_resolutions,manual_address_map,group_invite_required,group_blocked,group_hold}.json var/drumline/
+```
+
+Without these, profile commands succeed but produce empty/incorrect output — add
+the `config --check` guard (gap D4).
+
+### Drumline refresh order (do not reorder)
+
+```bash
+ILL=~/repos/pngdeity/active/illini-drumline-contacts-alumni
+P="python -m reconcile_core.profile.drumline"
+uv run $P migrate
+uv run $P import-drumline --tracker "$ILL/deliverables/Tracker.csv"
+uv run $P import-master   --input   "$ILL/working/backups/drumline-master-v2_pre_rename_20260921.csv"
+uv run $P name-resolutions
+uv run $P export-members  --out     /tmp/drumline-members.csv
+```
+
+`import-master` **overwrites** the `drumline_outreach` overlay, so it must run
+before `name-resolutions`. See §3.
+
+---
+
+## 2. System map
+
+| Path | Responsibility |
+| --- | --- |
+| `models.py` | `StandardContact`, `SocialHandle`, `ReconciliationDiff` (stdlib only) |
+| `interfaces.py` | `BaseAdapter`, `BasePersistence` contracts |
+| `store/` | Canonical store: `migrations/*.sql`, `migrate.py` runner, `store.py` helpers, `labels.py` vocabulary, `bridge.py` (`StandardContact` ↔ store), `import_db.py` (legacy import) |
+| `io/` | Google Contacts CSV projection: `google_csv.py` (`import_contacts`, `export_contacts`) |
+| `reconciler.py` | Normalization-aware union: emails, urls, handles, imClients, phones |
+| `database.py` | `SQLitePersistence` (store-backed `BasePersistence` + `ingest`/`contact_from_entity`) |
+| `google_adapter.py` / `loader.py` | `gws` wrapper / etag-guarded PATCH (legacy Google path only) |
+| `cli.py` + `__main__.py` | Unified CLI: `migrate`, `ingest`, `resolve`, `reconcile`, `export`, `audit` |
+| `main.py` | Legacy Google-API reconcile loop (`ADAPTER_CLASSES`, `fuzzy_match_name`) |
+| `profile/drumline/` | Illini Drumline profile: overlay migration, importers, name resolutions, member export, config |
+| `adapters/` | LinkedIn, Discord, Matrix, Generic CSV |
+
+Store schema (entities · external_refs · contact_points · addresses · aliases ·
+segments · segment_members · decision_state · external_status · audit_log ·
+unresolved_identities) is defined in
+`src/reconcile_core/store/migrations/0001_init.sql`; the drumline overlay is in
+`src/reconcile_core/profile/drumline/migrations/0002_drumline_outreach.sql`.
+
+---
+
+## 3. Invariants you must not break
+
+1. **The store is master.** Never hand-edit generated outputs (`Contacts.csv`,
+   `Contacts_import.csv`, `drumline-members.csv`); change the store and regenerate.
+2. **Zero loss / Contact-Completeness.** Union additions; never delete a contact
+   point to resolve a conflict. Verification only orders/labels, never prunes.
+3. **Identity = `external_refs`.** A `(source, ref_value)` pair maps to exactly one
+   entity; one entity may hold many platform refs (cross-platform convergence).
+   Do not reintroduce an `identity_map`.
+4. **The alumni marker** is `Custom Field 1 = ("Alumni Status", "Illini Drumline")`
+   and the `illini-drumline-alumni` segment; it is reconstructed on export, not
+   stored as a handle.
+5. **Curated decisions are data, not code.** The three name resolutions, the
+   Rachel Misurac entity merge, and verification overrides live in
+   `var/drumline/*.json` and the store. Preserve them.
+6. **Profile refresh order:** migrations → import-drumline → **import-master** →
+   name-resolutions → export-members (§1).
+7. **Migration rules:** the runner owns `schema_version`; migrations must not
+   contain `BEGIN`/`COMMIT`; profile migrations use `CREATE TABLE IF NOT EXISTS`
+   because imported legacy DBs carry unowned tables; profile migration dirs are
+   passed via `extra_dirs`.
+8. **PII stays out of git.** See §4.
+
+---
+
+## 4. Data & PII boundaries
+
+- **Git-ignored (keep local):** `var/` (store + drumline configs), `AGENTS.md`
+  and other generated context, `*.db-wal`/`*.db-shm`, `.venv`.
+- **Never commit** real contact data, configs, or generated projections.
+- **Real data lives in the illini repo**
+  (`~/repos/pngdeity/active/illini-drumline-contacts-alumni`): `working/contacts.db`,
+  `working/*.json` configs, `deliverables/*.csv`. That project is **not archived**;
+  it remains the source of the legacy store and curated configs.
+- `test_data/` must stay no-PII.
+
+---
+
+## 5. Dev loop & definition of done
+
+```bash
+uv run pytest -q                 # 93 passing
+uv run ruff check src tests      # must be clean
+apm compile                      # if you touched .apm/instructions/**
+```
+
+A change is complete when: tests pass, lint is clean, docs you invalidated are
+fixed, and (per `AGENTS.md`) commits are signed (`git commit -S`) with a
+semantic message. There is **no CI yet** (gap D6) and pushing requires
+confirmation.
+
+---
+
+## 6. Existing open decisions & backlog
+
+From `docs/CONSOLIDATION-PLAN.md`:
+
+- **§10 decisions:** `gws` direction; store location (repo-local `var/` now, XDG
+  default deferred); stdlib-core-only dependency rule; project name; drumline
+  location; illini disposition (**decided: do not archive**).
+- **B7 (blocked):** resume the Google Groups additions (181 remaining) — gated by
+  Google's daily-limit cooldown, external to this repo.
+- **Illini-side:** the `working/*.json` maps cleanup (recorded in the illini TODO).
+
+---
+
+## 7. Discovery gaps to close (your backlog)
+
+Each item removes a future agent's discovery cost. Suggested order is top-down;
+work in small signed commits and update this doc as you go.
+
+| ID | Goal | Acceptance criteria | Effort |
+| --- | --- | --- | --- |
+| **D1** | Portable agent context | `apm.yml` dependency resolves via a portable git ref (or vendored package), not an absolute path; `apm compile` works on a clean machine; README documents it as step 0 | M |
+| **D2** | One CLI entry point | Legacy loop exposed as a subcommand (e.g. `python -m reconcile_core google-sync`); `main.py` no longer a separate user-facing entry; docs updated | S |
+| **D3** | One-command bootstrap | `scripts/bootstrap.sh` (or Makefile) runs `uv sync → apm compile → migrate → seed demo → pytest`; `docs/DATA.md` documents store provenance + the illini copy command | M |
+| **D4** | No-PII demo seed | `seed --demo` loads a synthetic store from `test_data/`; `profile.drumline config --check` fails loudly on missing configs; example config template bundled | M |
+| **D5** | Capture domain invariants | No-PII `docs/PROVENANCE.md` (or profile README section) documenting §3 items with cross-repo pointers; `profile.drumline refresh` runs the ordered pipeline in code | M |
+| **D6** | CI | GitHub Actions job runs `ruff check` + `pytest` on push/PR; badge in README | S |
+| **D7** | Configuration reference | Document `RECONCILE_CORE_DB`, `RECONCILE_CORE_DRUMLINE_CONFIG`, default paths, and the open XDG decision | S |
+| **D8** | Migration guide | `docs/MIGRATIONS.md` (or store README section): authoring rules, `extra_dirs`, baseline re-stamp rationale, `IF NOT EXISTS` requirement | S |
+| **D9** | `gws` clarity | README states the unified path needs no `gws` unless syncing to Google | S |
+| **D10** | Backlog tracking | Convert §6 open decisions + this table into GitHub issues (or `docs/OPEN-ITEMS.md`) as the single backlog | S |
+| **D11** | Cross-repo pointer | README links the illini project as the data/PII source and explains the profile relationship | S |
+| **D12** | Self-healing enforcement | Avoid hardcoded test counts in docs (or add a test asserting the README count matches `pytest --collect-only`) | S |
+
+**Definition of done for the backlog:** a clone on a clean machine can run the
+bootstrap (D1/D3/D6), exercise the system without PII (D4), and a new agent can
+learn the invariants without leaving this repo (D5/D7/D8/D10/D11).
+
+---
+
+## 8. Pointers
+
+- `README.md` — usage and architecture overview.
+- `CONTRIBUTING.md` — how to regenerate agent context.
+- `docs/CONSOLIDATION-PLAN.md` — design, phases, decisions, phase log.
+- `docs/RECONCILE-CORE-HANDOFF.md` — detailed technical spec.
+- `docs/ADAPTER_RESEARCH.md` — platform roadmap (Facebook, GitHub, X.com, Telegram).
+- `docs/SETUP.md` — prerequisites (`uv`, `gws`, Python 3.14).
+- `src/reconcile_core/profile/drumline/README.md` — profile usage and PII conventions.
