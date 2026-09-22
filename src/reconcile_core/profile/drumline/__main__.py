@@ -10,6 +10,7 @@ Commands:
     name-resolutions   apply versioned manual name resolutions
     import-master      seed the outreach overlay from the legacy master CSV
     export-members     generate the person-level member CSV
+    needs-live-email   derive the needs-live-email backlog from the store
 
 Run ``<command> --help`` for options. See the package README for the PII
 conventions (configs in ``var/drumline/``; data paths passed in).
@@ -26,6 +27,7 @@ COMMANDS = (
     "name-resolutions",
     "import-master",
     "export-members",
+    "needs-live-email",
 )
 
 
@@ -47,6 +49,7 @@ def main(argv: list[str] | None = None) -> int:
         import_master,
         migrate,
         name_resolutions,
+        needs_live_email,
     )
 
     dispatch = {
@@ -56,6 +59,7 @@ def main(argv: list[str] | None = None) -> int:
         "name-resolutions": name_resolutions.main,
         "import-master": import_master.main,
         "export-members": export_members.main,
+        "needs-live-email": needs_live_email.main,
     }
     sys.argv = [f"reconcile_core.profile.drumline {command}", *rest]
     return dispatch[command]()

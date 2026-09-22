@@ -43,6 +43,7 @@ uv run python -m reconcile_core.profile.drumline audition-members
 uv run python -m reconcile_core.profile.drumline import-master   --input LEGACY-MASTER.csv
 uv run python -m reconcile_core.profile.drumline name-resolutions
 uv run python -m reconcile_core.profile.drumline export-members  --out MEMBERS.csv
+uv run python -m reconcile_core.profile.drumline needs-live-email --out NEEDS-LIVE-EMAIL.csv
 
 # Legacy Google-API loop
 uv run python -m reconcile_core.main <file> -p <platform> [--dry-run]
@@ -115,6 +116,7 @@ uv run $P audition-members
 uv run $P import-master   --input   "$ILL/working/backups/drumline-master-v2_pre_rename_20260921.csv"
 uv run $P name-resolutions
 uv run $P export-members  --out     /tmp/drumline-members.csv
+uv run $P needs-live-email --out    /tmp/group_needs_live_email.csv
 ```
 
 `import-master` **overwrites** the `drumline_outreach` overlay, so it must run

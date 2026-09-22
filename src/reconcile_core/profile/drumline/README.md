@@ -20,6 +20,7 @@ Domain layer for the Illini Drumline, on top of the generic contacts store.
 - **`import_master`**: one-time seed of `master_person_id` refs, primary email,
   and the `drumline_outreach` overlay from the legacy master CSV.
 - **`export_members`**: generates the person-level `drumline-members.csv`.
+- **`needs_live_email`**: derives the needs-live-email research backlog (members with no email or only non-live addresses) from the store.
 
 ## PII
 
@@ -56,6 +57,10 @@ uv run python -m reconcile_core.profile.drumline name-resolutions --db var/conta
 # generate the member list
 uv run python -m reconcile_core.profile.drumline export-members \
     --out var/drumline-members.csv --db var/contacts.db
+
+# derive the needs-live-email backlog
+uv run python -m reconcile_core.profile.drumline needs-live-email \
+    --out var/group_needs_live_email.csv --db var/contacts.db
 ```
 
 `uv run pytest -q tests/test_drumline_profile.py tests/test_audition_members.py`
