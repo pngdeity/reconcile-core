@@ -21,7 +21,7 @@ Trust but verify. Claims in AGENTS.md are **assertions about the codebase**, not
 3. **Startup checklist** — run these at session open:
    - `rg choices src/reconcile_core/main.py` — does it match the `--platform` list below?
    - `rg "class.*Error" src/reconcile_core/google_adapter.py src/reconcile_core/loader.py` — do error classes match the error conventions table?
-   - `uv run pytest --collect-only -q | tail -1` — test count should be 101.
+   - `uv run pytest --collect-only -q | tail -1` — test count should be 110.
 4. **Context file inventory.** If any of these files are missing or stale, note it:
    - `docs/AGENT-ONBOARDING.md` — **start here**: bootstrap, system map, invariants, and the discovery-gap backlog.
    - `docs/RECONCILE-CORE-HANDOFF.md` — detailed technical spec.
@@ -53,6 +53,8 @@ The unified CLI treats the store as the source of truth:
 
 ```bash
 uv run python -m reconcile_core migrate [--profile drumline] [--status]
+uv run python -m reconcile_core backup [--out FILE]
+uv run python -m reconcile_core restore SNAPSHOT [--force]
 uv run python -m reconcile_core ingest EXPORT -p <linkedin|discord|matrix|generic>
 uv run python -m reconcile_core resolve
 uv run python -m reconcile_core reconcile EXPORT -p <platform> [--apply]
@@ -78,9 +80,9 @@ uv run python -m reconcile_core.main <file> -p <linkedin|discord|matrix|generic>
 | `loader.py` | `ContactLoader.apply_additions()` — PATCH contacts; `EtagsConflictError` |
 | `reconciler.py` | `Reconciler.reconcile()` — normalization-aware diff for emails, urls, handles, imClients, phones |
 | `main.py` | Legacy Google-API reconcile loop; `ADAPTER_CLASSES` registry; `fuzzy_match_name()` |
-| `cli.py` | Unified CLI (`python -m reconcile_core`): `migrate`, `ingest`, `resolve`, `reconcile`, `export`, `audit` |
+| `cli.py` | Unified CLI (`python -m reconcile_core`): `migrate`, `backup`, `restore`, `ingest`, `resolve`, `reconcile`, `export`, `audit` |
 | `adapters/` | `LinkedInAdapter`, `DiscordAdapter`, `MatrixAdapter`, `GenericCSVAdapter` |
-| `store/` | Canonical contacts store (source of truth): `migrations/*.sql`, `migrate.py` runner, `store.py` helpers, `labels.py` vocabulary, `bridge.py` (StandardContact <-> store), `import_db.py` (legacy-store import). Default DB path is repo-local `var/contacts.db` (`RECONCILE_CORE_DB` overrides; git-ignored). |
+| `store/` | Canonical contacts store (source of truth): `migrations/*.sql`, `migrate.py` runner, `store.py` helpers, `labels.py` vocabulary, `bridge.py` (StandardContact <-> store), `import_db.py` (legacy-store import), `backup.py` (snapshot/restore/verify via `VACUUM INTO`). Default DB path is repo-local `var/contacts.db` (`RECONCILE_CORE_DB` overrides; git-ignored). |
 | `io/` | Google Contacts CSV projection: `google_csv.py` (`import_contacts`, `export_contacts`) |
 | `profile/drumline/` | Illini Drumline domain profile: `migrations/0002_drumline_outreach.sql`, `migrate.py` (core+profile migrations), `import_drumline.py`, `audition_members.py`, `name_resolutions.py`, `import_master.py`, `export_members.py`, `needs_live_email.py`, `config.py` (PII configs in git-ignored `var/drumline/`). Single CLI: `python -m reconcile_core.profile.drumline <migrate\|import-drumline\|audition-members\|import-master\|name-resolutions\|export-members\|needs-live-email>`. Refresh order: migrations → import-drumline → audition-members → import-master → name-resolutions → export-members (import-master overwrites the outreach overlay); `needs-live-email` is a derived report run last. |
 | `test_data/` | Sample files for each adapter (no PII) |

@@ -34,6 +34,7 @@ The store (`var/contacts.db`) is the source of truth:
 
 ```bash
 uv run python -m reconcile_core migrate [--profile drumline] [--status]
+uv run python -m reconcile_core backup [--out FILE]
 uv run python -m reconcile_core ingest Connections.csv -p linkedin
 uv run python -m reconcile_core reconcile Connections.csv -p linkedin         # dry run
 uv run python -m reconcile_core reconcile Connections.csv -p linkedin --apply

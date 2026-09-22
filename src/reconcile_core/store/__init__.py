@@ -4,6 +4,7 @@ The store is the single source of truth for entities and their contact points;
 Google Contacts and other generated files are projections of it.
 """
 
+from .backup import default_backup_path, restore, snapshot, verify
 from .bridge import (
     IM_SERVICE,
     contact_from_entity,
@@ -37,6 +38,10 @@ __all__ = [
     "contact_from_entity",
     "find_entity_by_email",
     "write_contact",
+    "default_backup_path",
+    "restore",
+    "snapshot",
+    "verify",
     "CANONICAL",
     "SOCIAL_SERVICES",
     "normalize_label",

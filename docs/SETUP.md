@@ -83,17 +83,22 @@ If no `Name` column is found, the adapter will raise an error listing the availa
     ```bash
     uv run python -m reconcile_core migrate
     ```
-3.  **Ingest and preview**: load an export, then preview the merge (dry run by
+3.  **Snapshot** (optional but recommended): write a consistent copy before
+    making changes.
+    ```bash
+    uv run python -m reconcile_core backup
+    ```
+4.  **Ingest and preview**: load an export, then preview the merge (dry run by
     default — nothing is written to the store).
     ```bash
     uv run python -m reconcile_core ingest path/to/Connections.csv -p linkedin
     uv run python -m reconcile_core reconcile path/to/Connections.csv -p linkedin
     ```
-4.  **Apply**: union the additions into the store.
+5.  **Apply**: union the additions into the store.
     ```bash
     uv run python -m reconcile_core reconcile path/to/Connections.csv -p linkedin --apply
     ```
-5.  **Export a projection**:
+6.  **Export a projection**:
     ```bash
     uv run python -m reconcile_core export google-contacts --out out/
     ```
@@ -111,4 +116,6 @@ The canonical store is a local SQLite database:
     lands, the repo-local path is authoritative.
 *   It holds entities, `external_refs` (platform identity → entity), contact
     points, segments, and the audit log. Deleting it drops store-side curation;
-    Google-side data is unaffected.
+    Google-side data is unaffected. Snapshot and restore it with
+    `reconcile_core backup` / `reconcile_core restore SNAPSHOT` (defaults to
+    `<store-dir>/backups/`).

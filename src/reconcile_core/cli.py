@@ -18,6 +18,7 @@ from .database import SQLitePersistence
 from .io import export_contacts
 from .reconciler import Reconciler
 from .store import apply_migrations, connect, counts, find_entity_by_email
+from .store import backup as store_backup
 from .store import get_entity_by_ref
 from .store.bridge import contact_from_entity, write_contact
 from .store.migrate import status as migration_status
@@ -61,6 +62,24 @@ def cmd_migrate(args) -> int:
 
         version = apply_profile_migrations(db)
     console.print(f"[green]Store schema at version {version}[/green]")
+    return 0
+
+
+def cmd_backup(args) -> int:
+    dest = Path(args.out) if getattr(args, "out", None) else None
+    path = store_backup.snapshot(_db(args), dest)
+    info = store_backup.verify(path)
+    console.print(f"[green]Snapshot written to {path}[/green]")
+    console.print(
+        f"  schema version {info['schema_version']}, "
+        f"{info['counts'].get('entities', 0)} entities"
+    )
+    return 0
+
+
+def cmd_restore(args) -> int:
+    path = store_backup.restore(args.snapshot, _db(args), force=args.force)
+    console.print(f"[green]Store restored from {args.snapshot} to {path}[/green]")
     return 0
 
 
@@ -224,6 +243,22 @@ def build_parser() -> argparse.ArgumentParser:
         "--status", action="store_true", help="list applied migrations"
     )
     migrate.set_defaults(func=cmd_migrate)
+
+    backup = sub.add_parser("backup", help="snapshot the store to a file")
+    with_db(backup)
+    backup.add_argument(
+        "--out",
+        help="destination file (default: <store-dir>/backups/<name>-<timestamp>.db)",
+    )
+    backup.set_defaults(func=cmd_backup)
+
+    restore = sub.add_parser("restore", help="restore the store from a snapshot")
+    with_db(restore)
+    restore.add_argument("snapshot", help="snapshot file to restore")
+    restore.add_argument(
+        "--force", action="store_true", help="overwrite an existing store"
+    )
+    restore.set_defaults(func=cmd_restore)
 
     ingest = sub.add_parser("ingest", help="load an adapter export into the store")
     with_db(ingest)

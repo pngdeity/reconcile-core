@@ -29,6 +29,8 @@ Command reference:
 ```bash
 # Unified CLI (store-first)
 uv run python -m reconcile_core migrate [--profile drumline] [--status]
+uv run python -m reconcile_core backup [--out FILE]
+uv run python -m reconcile_core restore SNAPSHOT [--force]
 uv run python -m reconcile_core ingest EXPORT -p <linkedin|discord|matrix|generic>
 uv run python -m reconcile_core resolve
 uv run python -m reconcile_core reconcile EXPORT -p <platform> [--apply]
@@ -71,6 +73,9 @@ uv run pytest -q                    # all tests pass
 # 3. Create/refresh the store
 uv run python -m reconcile_core migrate
 uv run python -m reconcile_core migrate --profile drumline   # adds the drumline overlay
+
+# 4. Snapshot the store (writes <store-dir>/backups/)
+uv run python -m reconcile_core backup
 ```
 
 ### Getting data into the store
@@ -132,7 +137,7 @@ seed (the dated backup is the surviving copy); `drumline-members.csv` is an
 | --- | --- |
 | `models.py` | `StandardContact`, `SocialHandle`, `ReconciliationDiff` (stdlib only) |
 | `interfaces.py` | `BaseAdapter`, `BasePersistence` contracts |
-| `store/` | Canonical store: `migrations/*.sql`, `migrate.py` runner, `store.py` helpers, `labels.py` vocabulary, `bridge.py` (`StandardContact` ↔ store), `import_db.py` (legacy import) |
+| `store/` | Canonical store: `migrations/*.sql`, `migrate.py` runner, `store.py` helpers, `labels.py` vocabulary, `bridge.py` (`StandardContact` ↔ store), `import_db.py` (legacy import), `backup.py` (snapshot/restore/verify) |
 | `io/` | Google Contacts CSV projection: `google_csv.py` (`import_contacts`, `export_contacts`) |
 | `reconciler.py` | Normalization-aware union: emails, urls, handles, imClients, phones |
 | `database.py` | `SQLitePersistence` (store-backed `BasePersistence` + `ingest`/`contact_from_entity`) |
