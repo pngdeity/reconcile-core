@@ -143,3 +143,13 @@ Roughly **5-6 focused days** (B0-B6), dominated by B3 (bridge + reconciler over
 the store) and B5 (drumline profile). B7 is gated only by the Google cooldown.
 This is a migration and unification, not a rewrite — the data and half the code
 carry over.
+
+## 12. Baseline (B0)
+
+Recorded 2026-09-21 at commit `9e0ed4a` (branch `main`, ahead of `origin/main` by 2).
+
+- Python 3.14.7; uv 0.12.17
+- `uv run pytest -q` -> **47 passed**
+- Working tree clean; `git pull --ff-only` reported up-to-date (`origin/main` = `c770245`, fully merged)
+
+This is the green baseline that every later phase must preserve.
