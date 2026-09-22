@@ -153,3 +153,8 @@ Recorded 2026-09-21 at commit `9e0ed4a` (branch `main`, ahead of `origin/main` b
 - Working tree clean; `git pull --ff-only` reported up-to-date (`origin/main` = `c770245`, fully merged)
 
 This is the green baseline that every later phase must preserve.
+
+## 13. Phase log
+
+- **B0 DONE (2026-09-21):** pulled to `c770245`; baseline suite green (47 passed); recorded above.
+- **B1 DONE (2026-09-21):** ported the store into `src/reconcile_core/store/` (migration `0001_init.sql`, `migrate.py` runner, `store.py` helpers, `labels.py`); unified identity by replacing `identity_map` with `external_refs` (platform identity -> entity, Google resourceName as the `google` ref); kept `audit_log` and `unresolved_identities`; `database.py` is now store-backed. Test suite **61 passing** (47 baseline + 14 new: `tests/test_store.py` + cross-platform convergence in `tests/test_persistence.py`).

@@ -57,12 +57,13 @@ uv run python -m reconcile_core.main <file> -p <linkedin|discord|matrix|generic>
 |------|---------|
 | `models.py` | `StandardContact`, `SocialHandle`, `ReconciliationDiff` — shared vocabulary, stdlib only |
 | `interfaces.py` | `BaseAdapter(ABC)`, `BasePersistence(ABC)` — contracts |
-| `database.py` | `SQLitePersistence` — identity_map, audit_log, unresolved_identities (WAL mode) |
+| `database.py` | `SQLitePersistence` — store-backed persistence (platform identity -> entity via `external_refs`; `audit_log`, `unresolved_identities`) |
 | `google_adapter.py` | `GoogleAdapter` — wraps `gws` via `subprocess`; `GWSCommandError` |
 | `loader.py` | `ContactLoader.apply_additions()` — PATCH contacts; `EtagsConflictError` |
 | `reconciler.py` | `Reconciler.reconcile()` — normalization-aware diff for emails, urls, imClients, phones (handles not yet reconciled) |
 | `main.py` | CLI loop; `ADAPTER_CLASSES` registry; `fuzzy_match_name()` |
 | `adapters/` | `LinkedInAdapter`, `DiscordAdapter`, `MatrixAdapter`, `GenericCSVAdapter` |
+| `store/` | Canonical contacts store (source of truth): `migrations/*.sql`, `migrate.py` runner, `store.py` helpers, `labels.py` vocabulary |
 | `test_data/` | Sample files for each adapter (no PII) |
 | `tests/` | Test files mirror `src/reconcile_core/` structure |
 
