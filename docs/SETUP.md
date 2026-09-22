@@ -8,15 +8,16 @@ Ensure the following tools are installed and available in your `$PATH`:
 
 *   **`uv`**: Fast Python package manager.
     *   *Arch Linux:* install `uv` from the official repositories with your own package manager (e.g. `pacman -S uv`, requires your privileges).
-*   **`gws`**: Google Workspace CLI.
+*   **`gws`** (optional): Google Workspace CLI, needed only to sync with Google
+    Contacts (ADR-0003).
     *   *Action:* Install via your preferred method and ensure the binary is named `gws`.
 *   **Python 3.14+**: The project runtime.
     *   *uv-managed:* `uv python install 3.14` (recommended, works cross-platform)
     *   *Arch Linux:* install Python via your own package manager (e.g. `pacman -S python`, requires your privileges).
 
-## 2. Authentication & Authorization
+## 2. Authentication & Authorization (Google sync only)
 
-You do **not** need a personal API key. `reconcile-core` leverages your existing CLI authentication.
+You do **not** need a personal API key. `reconcile-core` leverages your existing CLI authentication. Skip this section unless you are syncing to Google.
 
 1.  **Google Login**: Open your terminal and run the authentication command for `gws`:
     ```bash
@@ -74,27 +75,40 @@ If no `Name` column is found, the adapter will raise an error listing the availa
 
 ## 4. First-Run Guide
 
-1.  **Sync Environment**: Ensure dependencies are locked and the project is installed in editable mode.
+1.  **Sync environment**: install dependencies.
     ```bash
     uv sync
     ```
-2.  **Test Run (Dry Run)**: Preview changes without writing to Google Contacts or your local map.
+2.  **Create the store** (repo-local `var/contacts.db` by default).
     ```bash
-    # LinkedIn
-    uv run python -m reconcile_core.main path/to/Connections.csv -p linkedin --dry-run
-    # Discord
-    uv run python -m reconcile_core.main path/to/relationships.json -p discord --dry-run
-    # Matrix
-    uv run python -m reconcile_core.main path/to/matrix_export.json -p matrix --dry-run
-    # Generic CSV
-    uv run python -m reconcile_core.main path/to/contacts.csv -p generic --dry-run
+    uv run python -m reconcile_core migrate
     ```
-3.  **Active Reconciliation**: Apply changes and map identities.
+3.  **Ingest and preview**: load an export, then preview the merge (dry run by
+    default — nothing is written to the store).
     ```bash
-    uv run python -m reconcile_core.main path/to/Connections.csv -p linkedin
+    uv run python -m reconcile_core ingest path/to/Connections.csv -p linkedin
+    uv run python -m reconcile_core reconcile path/to/Connections.csv -p linkedin
+    ```
+4.  **Apply**: union the additions into the store.
+    ```bash
+    uv run python -m reconcile_core reconcile path/to/Connections.csv -p linkedin --apply
+    ```
+5.  **Export a projection**:
+    ```bash
+    uv run python -m reconcile_core export google-contacts --out out/
     ```
 
-## 5. Persistence Note
-Your identity mappings and audit logs are stored locally in SQLite:
-*   **Default Path**: `$XDG_DATA_HOME/reconcile-core/identities.db` (usually `~/.local/share/reconcile-core/identities.db`).
-*   Deleting this file will force the tool to re-identify all contacts (though `gws` data on Google's side will remain).
+The legacy `python -m reconcile_core.main <file> -p <platform>` loop is
+deprecated and only relevant for Google-side updates (ADR-0003).
+
+## 5. Persistence
+
+The canonical store is a local SQLite database:
+
+*   **Default path**: repo-local `var/contacts.db` (git-ignored). Override with
+    `--db` or `RECONCILE_CORE_DB`. ADR-0002 sets an XDG default
+    (`$XDG_DATA_HOME/reconcile-core/contacts.db`) as the target; until that
+    lands, the repo-local path is authoritative.
+*   It holds entities, `external_refs` (platform identity → entity), contact
+    points, segments, and the audit log. Deleting it drops store-side curation;
+    Google-side data is unaffected.

@@ -1,10 +1,12 @@
 # reconcile-core
 
-ETL pipeline to reconcile fragmented social identities into Google Contacts.
+ETL pipeline that reconciles fragmented social identities into a canonical
+SQLite contacts store. Exports from LinkedIn, Discord, Matrix, or generic CSV
+sources are ingested and merged into the store; Google Contacts is one
+projection of it, not the master.
 
-Takes exports from LinkedIn, Discord, Matrix, or generic CSV sources, compares
-them against your Google Contacts, and applies safe additions with manual
-conflict resolution — never overwriting without your confirmation.
+Merges are zero-loss: additions are unioned and conflicts require your
+confirmation — never overwriting silently.
 
 ## Supported platforms
 
@@ -18,7 +20,8 @@ conflict resolution — never overwriting without your confirmation.
 ## Prerequisites
 
 - **Python 3.14+** with [uv](https://docs.astral.sh/uv/)
-- **[gws](https://github.com/nickvourd/gws)** CLI authenticated to Google (`gws auth login`)
+- **[gws](https://github.com/nickvourd/gws)** CLI authenticated to Google
+  (`gws auth login`) — only needed to sync with Google Contacts (ADR-0003)
 
 ## Quick start
 
@@ -38,7 +41,7 @@ uv run python -m reconcile_core export google-contacts --out out/
 uv run python -m reconcile_core audit
 ```
 
-Legacy Google-API reconcile path (still supported):
+Legacy Google-API reconcile path (**deprecated**; slated for removal — ADR-0003):
 
 ```bash
 uv run python -m reconcile_core.main Connections.csv --platform linkedin
@@ -53,14 +56,16 @@ uv run python -m reconcile_core.main contacts.csv -p generic
 1. **Extract** — Adapters parse platform-specific exports into a common `StandardContact` model
 2. **Map** — platform IDs resolve to store entities via `external_refs` (the Google `resourceName` is one more ref), with fuzzy name matching fallback
 3. **Diff** — Normalization-aware comparison detects new emails, URLs, IMs, and phone numbers to add; display name conflicts require manual resolution
-4. **Apply** — Safe PATCH updates with etag-based concurrency control
+4. **Apply** — zero-loss union into the store (`reconcile --apply`); projecting
+   to Google is a separate, etag-guarded write
 
 ## Architecture
 
 ```
-adapters/   -->  reconciler.py  -->  loader.py  -->  google_adapter.py  -->  gws CLI
-                    |                                        |
-               database.py                              Google Contacts
+adapters/  -->  reconciler.py  -->  store/  -->  projections
+                                 (master)        ├─ google_csv.py
+                              var/contacts.db    ├─ google_adapter.py --> gws CLI
+                                                 └─ profile exports
 ```
 
 ## Agent context (APM)

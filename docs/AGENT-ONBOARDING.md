@@ -22,7 +22,7 @@ Three CLI surfaces exist:
 | --- | --- | --- |
 | Unified (preferred) | `python -m reconcile_core <command>` | current |
 | Drumline profile | `python -m reconcile_core.profile.drumline <command>` | current (domain profile) |
-| Legacy Google-API loop | `python -m reconcile_core.main <file> -p <platform>` | retained |
+| Legacy Google-API loop | `python -m reconcile_core.main <file> -p <platform>` | deprecated (ADR-0003) |
 
 Command reference:
 

@@ -6,7 +6,7 @@
 decentered from its deadline; its normalized SQLite store is proposed as the
 master data layer for `reconcile-core`.
 
-## 1. Baseline facts
+## 1. Baseline facts (pre-consolidation, kept for history)
 
 - `reconcile-core` is Python **3.14** (installed: 3.14.7), deps = `rich` only, MIT.
 - `gws` CLI present at `/usr/bin/gws`.

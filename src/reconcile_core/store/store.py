@@ -36,8 +36,8 @@ def default_db_path() -> Path:
     """Default location of the canonical store.
 
     Repo-local (``var/contacts.db``) for now; override with the
-    ``RECONCILE_CORE_DB`` environment variable. The XDG default is revisited
-    when the CLI is unified.
+    ``RECONCILE_CORE_DB`` environment variable. ADR-0002 settles an XDG default
+    (roadmap C7); until it lands, the repo-local path is authoritative.
     """
     override = os.environ.get("RECONCILE_CORE_DB")
     if override:

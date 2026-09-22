@@ -4,7 +4,7 @@ applyTo: "**"
 ---
 # AGENTS.md: `reconcile-core`
 
-ETL pipeline to reconcile social identities (LinkedIn, Discord, Matrix, Generic CSV) into Google Contacts via the `gws` CLI.
+ETL pipeline to reconcile social identities (LinkedIn, Discord, Matrix, Generic CSV) into a canonical SQLite store; Google Contacts is one projection (via the optional `gws` CLI).
 **Principle:** Zero-loss reconciliation — never overwrite without user confirmation.
 Full spec: `docs/RECONCILE-CORE-HANDOFF.md`.
 
@@ -61,7 +61,7 @@ uv run python -m reconcile_core export drumline-members --out FILE
 uv run python -m reconcile_core audit
 ```
 
-Legacy Google-API reconcile path (still supported):
+Legacy Google-API reconcile path (**deprecated**; slated for removal — ADR-0003):
 
 ```bash
 uv run python -m reconcile_core.main <file> -p <linkedin|discord|matrix|generic> [--dry-run]
@@ -95,7 +95,7 @@ uv run python -m reconcile_core.main <file> -p <linkedin|discord|matrix|generic>
 | `sqlite3.Error` | `database.py` | Database operation failure — caught in `_connection()`, triggers rollback |
 | `ValueError` | adapter files | Malformed input (missing LinkedIn header, invalid JSON format, CSV without name column) |
 
-Never swallow errors. Bubble them to the CLI layer (`main.py`) for user reporting.
+Never swallow errors. Bubble them to the CLI layer (`cli.py`) for user reporting.
 
 ## Adapter Contract
 
