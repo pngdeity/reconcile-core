@@ -4,7 +4,6 @@ The store is the single source of truth for entities and their contact points;
 Google Contacts and other generated files are projections of it.
 """
 
-from .backup import default_backup_path, restore, snapshot, verify
 from .bridge import (
     IM_SERVICE,
     contact_from_entity,
@@ -12,7 +11,6 @@ from .bridge import (
     write_contact,
 )
 from .labels import CANONICAL, SOCIAL_SERVICES, normalize_label, service_from_label
-from .migrate import apply_migrations, discover, status
 from .store import (
     DEFAULT_DB,
     ENTITY_FIELDS,
@@ -67,3 +65,27 @@ __all__ = [
     "get_entity_by_ref",
     "mint_uid",
 ]
+
+# Submodules that expose a ``__main__`` CLI are resolved lazily (PEP 562).
+# Importing them during package init would make ``python -m
+# reconcile_core.store.<mod>`` trigger runpy's "found in sys.modules" warning.
+_LAZY_EXPORTS = {
+    "apply_migrations": "migrate",
+    "discover": "migrate",
+    "status": "migrate",
+    "default_backup_path": "backup",
+    "restore": "backup",
+    "snapshot": "backup",
+    "verify": "backup",
+}
+
+
+def __getattr__(name: str):
+    module_name = _LAZY_EXPORTS.get(name)
+    if module_name is None:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    from importlib import import_module
+
+    value = getattr(import_module(f".{module_name}", __name__), name)
+    globals()[name] = value
+    return value

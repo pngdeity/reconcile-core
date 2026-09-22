@@ -1,5 +1,8 @@
 """Tests for the unified CLI (B6). Synthetic, no PII."""
 
+import subprocess
+import sys
+
 import pytest
 
 import reconcile_core.main as main_module
@@ -118,6 +121,25 @@ def test_resolve_empty(tmp_path, capsys):
     db = tmp_path / "c.db"
     assert cli.main(["resolve", "--db", str(db)]) == 0
     assert "No unresolved" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize(
+    ("module", "flag"),
+    [
+        ("reconcile_core.store.migrate", "--status"),
+        ("reconcile_core.store.backup", "--verify"),
+    ],
+)
+def test_module_cli_emits_no_runpy_warning(tmp_path, module, flag):
+    db = tmp_path / "c.db"
+    cli.main(["migrate", "--db", str(db)])
+    proc = subprocess.run(
+        [sys.executable, "-m", module, flag, "--db", str(db)],
+        capture_output=True,
+        text=True,
+    )
+    assert proc.returncode == 0
+    assert "RuntimeWarning" not in proc.stderr
 
 
 def test_export_google_contacts(tmp_path, fake_adapter):
