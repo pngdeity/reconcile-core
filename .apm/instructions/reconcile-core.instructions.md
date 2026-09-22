@@ -63,7 +63,7 @@ uv run python -m reconcile_core.main <file> -p <linkedin|discord|matrix|generic>
 | `reconciler.py` | `Reconciler.reconcile()` — normalization-aware diff for emails, urls, handles, imClients, phones |
 | `main.py` | CLI loop; `ADAPTER_CLASSES` registry; `fuzzy_match_name()` |
 | `adapters/` | `LinkedInAdapter`, `DiscordAdapter`, `MatrixAdapter`, `GenericCSVAdapter` |
-| `store/` | Canonical contacts store (source of truth): `migrations/*.sql`, `migrate.py` runner, `store.py` helpers, `labels.py` vocabulary, `bridge.py` (StandardContact <-> store) |
+| `store/` | Canonical contacts store (source of truth): `migrations/*.sql`, `migrate.py` runner, `store.py` helpers, `labels.py` vocabulary, `bridge.py` (StandardContact <-> store), `import_db.py` (legacy-store import). Default DB path is repo-local `var/contacts.db` (`RECONCILE_CORE_DB` overrides; git-ignored). |
 | `io/` | Google Contacts CSV projection: `google_csv.py` (`import_contacts`, `export_contacts`) |
 | `test_data/` | Sample files for each adapter (no PII) |
 | `tests/` | Test files mirror `src/reconcile_core/` structure |

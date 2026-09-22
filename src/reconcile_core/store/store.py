@@ -28,9 +28,21 @@ ENTITY_FIELDS = (
 )
 
 
+REPO_ROOT = Path(__file__).resolve().parents[3]
+REPO_DB_PATH = REPO_ROOT / "var" / "contacts.db"
+
+
 def default_db_path() -> Path:
-    data_home = os.environ.get("XDG_DATA_HOME", os.path.expanduser("~/.local/share"))
-    return Path(data_home) / "reconcile-core" / "contacts.db"
+    """Default location of the canonical store.
+
+    Repo-local (``var/contacts.db``) for now; override with the
+    ``RECONCILE_CORE_DB`` environment variable. The XDG default is revisited
+    when the CLI is unified.
+    """
+    override = os.environ.get("RECONCILE_CORE_DB")
+    if override:
+        return Path(override).expanduser()
+    return REPO_DB_PATH
 
 
 DEFAULT_DB = default_db_path()
