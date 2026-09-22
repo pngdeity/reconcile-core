@@ -22,6 +22,9 @@ var/
 .DS_Store
 
 
+# Serena (per-machine MCP project state)
+.serena/
+
 # APM dependencies
 apm_modules/
 
