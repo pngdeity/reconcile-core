@@ -14,6 +14,8 @@ from pathlib import Path
 from typing import Optional
 
 from .interfaces import BasePersistence
+from .models import StandardContact
+from .store import bridge as _bridge
 from .store import store as _store
 from .store.migrate import apply_migrations
 
@@ -114,3 +116,35 @@ class SQLitePersistence(BasePersistence):
                 "INSERT INTO audit_log (resource_name, action, delta) VALUES (?, ?, ?)",
                 (resource_name, action, delta),
             )
+
+    def ingest(
+        self,
+        contact: StandardContact,
+        platform: Optional[str] = None,
+        source_id: Optional[str] = None,
+    ) -> dict:
+        """Resolve and union an adapter contact into the store (zero loss)."""
+        with self._connection() as conn:
+            return _bridge.write_contact(
+                conn, contact, platform=platform, source_id=source_id
+            )
+
+    def contact_from_entity(self, entity_id: int) -> StandardContact:
+        """Reconstruct a contact from a stored entity (for reconciliation)."""
+        with self._connection() as conn:
+            return _bridge.contact_from_entity(conn, entity_id)
+
+    def contact_for_identity(
+        self, platform: str, source_id: str
+    ) -> Optional[StandardContact]:
+        """The stored contact for a platform identity, or None if unknown."""
+        with self._connection() as conn:
+            entity_id = _store.get_entity_by_ref(conn, platform, source_id)
+            if entity_id is None:
+                return None
+            return _bridge.contact_from_entity(conn, entity_id)
+
+    def find_entity_by_email(self, email: str) -> Optional[int]:
+        """Resolve an entity id by one of its email contact points."""
+        with self._connection() as conn:
+            return _bridge.find_entity_by_email(conn, email)

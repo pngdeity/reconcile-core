@@ -1,6 +1,4 @@
-import sqlite3
 import pytest
-from pathlib import Path
 from reconcile_core.database import SQLitePersistence
 
 

@@ -4,6 +4,12 @@ The store is the single source of truth for entities and their contact points;
 Google Contacts and other generated files are projections of it.
 """
 
+from .bridge import (
+    IM_SERVICE,
+    contact_from_entity,
+    find_entity_by_email,
+    write_contact,
+)
 from .labels import CANONICAL, SOCIAL_SERVICES, normalize_label, service_from_label
 from .migrate import apply_migrations, discover, status
 from .store import (
@@ -27,6 +33,10 @@ from .store import (
 )
 
 __all__ = [
+    "IM_SERVICE",
+    "contact_from_entity",
+    "find_entity_by_email",
+    "write_contact",
     "CANONICAL",
     "SOCIAL_SERVICES",
     "normalize_label",

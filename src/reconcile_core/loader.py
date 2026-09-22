@@ -1,5 +1,4 @@
 import json
-import time
 from .google_adapter import GoogleAdapter, GWSCommandError
 from .models import StandardContact
 

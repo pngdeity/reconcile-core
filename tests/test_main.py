@@ -1,5 +1,4 @@
 """Tests for CLI module. Does NOT run the full reconciliation loop."""
-import pytest
 from reconcile_core.main import fuzzy_match_name, ADAPTER_CLASSES
 from reconcile_core.models import StandardContact
 

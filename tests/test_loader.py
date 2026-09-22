@@ -1,4 +1,3 @@
-import pytest
 from reconcile_core.loader import EtagsConflictError
 
 

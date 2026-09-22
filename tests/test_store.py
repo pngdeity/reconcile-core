@@ -1,6 +1,5 @@
 """Tests for the canonical contacts store (schema, migrations, helpers)."""
 
-import sqlite3
 
 import pytest
 
