@@ -24,6 +24,29 @@ Three CLI surfaces exist:
 | Drumline profile | `python -m reconcile_core.profile.drumline <command>` | current (domain profile) |
 | Legacy Google-API loop | `python -m reconcile_core.main <file> -p <platform>` | retained |
 
+Command reference:
+
+```bash
+# Unified CLI (store-first)
+uv run python -m reconcile_core migrate [--profile drumline] [--status]
+uv run python -m reconcile_core ingest EXPORT -p <linkedin|discord|matrix|generic>
+uv run python -m reconcile_core resolve
+uv run python -m reconcile_core reconcile EXPORT -p <platform> [--apply]
+uv run python -m reconcile_core export google-contacts --out DIR
+uv run python -m reconcile_core export drumline-members --out FILE
+uv run python -m reconcile_core audit
+
+# Drumline profile
+uv run python -m reconcile_core.profile.drumline migrate
+uv run python -m reconcile_core.profile.drumline import-drumline --tracker TRACKER.csv
+uv run python -m reconcile_core.profile.drumline import-master   --input LEGACY-MASTER.csv
+uv run python -m reconcile_core.profile.drumline name-resolutions
+uv run python -m reconcile_core.profile.drumline export-members  --out MEMBERS.csv
+
+# Legacy Google-API loop
+uv run python -m reconcile_core.main <file> -p <platform> [--dry-run]
+```
+
 Full design: `docs/CONSOLIDATION-PLAN.md` (phases B0–B7 and the phase log in §13).
 
 ---
@@ -37,7 +60,7 @@ all git-ignored. Do these in order.
 cd <reconcile-core>                 # e.g. ~/repos/pngdeity/incubating/reconcile-core
 
 # 1. Agent context (AGENTS.md is generated, not tracked)
-apm compile                         # requires the `apm` CLI; see gap D1 if it fails
+apm compile                         # APM CLI (gap D1); not required to build or test
 
 # 2. Dependencies + test baseline
 uv sync
@@ -62,8 +85,10 @@ uv run python -m reconcile_core.store.import_db --source "$ILL/working/contacts.
 This re-stamps `schema_version` to this package's baseline and leaves unowned
 tables (e.g. `drumline_outreach`) as pending migrations. See §3.
 
-**Option B — start empty.** `migrate` already gives you a usable store; write
-your own with `ingest` (see §5).
+**Option B — start empty.** `migrate` already gives you a usable store; load an
+adapter export with `ingest` (see the command reference in §0); the bundled
+no-PII sample works out of the box:
+`uv run python -m reconcile_core ingest test_data/generic_sample.csv -p generic`.
 
 ### Drumline profile configs (PII, git-ignored)
 
@@ -83,7 +108,7 @@ the `config --check` guard (gap D4).
 ```bash
 ILL=~/repos/pngdeity/active/illini-drumline-contacts-alumni
 P="python -m reconcile_core.profile.drumline"
-uv run $P migrate
+uv run $P migrate            # same overlay as `migrate --profile drumline`
 uv run $P import-drumline --tracker "$ILL/deliverables/Tracker.csv"
 uv run $P import-master   --input   "$ILL/working/backups/drumline-master-v2_pre_rename_20260921.csv"
 uv run $P name-resolutions
@@ -91,7 +116,9 @@ uv run $P export-members  --out     /tmp/drumline-members.csv
 ```
 
 `import-master` **overwrites** the `drumline_outreach` overlay, so it must run
-before `name-resolutions`. See §3.
+before `name-resolutions`. Its `--input` is the **legacy** `drumline-master-v2`
+seed (the dated backup is the surviving copy); `drumline-members.csv` is an
+*output* of the store, not an input, so it cannot be used here. See §3.
 
 ---
 
@@ -166,7 +193,7 @@ apm compile                      # if you touched .apm/instructions/**
 ```
 
 A change is complete when: tests pass, lint is clean, docs you invalidated are
-fixed, and (per `AGENTS.md`) commits are signed (`git commit -S`) with a
+fixed, and (repo policy) commits are signed (`git commit -S`) with a
 semantic message. There is **no CI yet** (gap D6) and pushing requires
 confirmation.
 
