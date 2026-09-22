@@ -13,6 +13,10 @@ Domain layer for the Illini Drumline, on top of the generic contacts store.
   decision state from the routing configs.
 - **`name_resolutions`**: applies the versioned manual name resolutions
   (field overrides, aliases, verification sync).
+- **`audition_members`**: applies the versioned audition-results config
+  (`var/drumline/audition_members.json`): fills names on nameless member entities
+  and creates entities for new members (anchored by an `audition-*` external ref,
+  added to `illini-drumline-alumni`, seeded `Verified` in `drumline_outreach`).
 - **`import_master`**: one-time seed of `master_person_id` refs, primary email,
   and the `drumline_outreach` overlay from the legacy master CSV.
 - **`export_members`**: generates the person-level `drumline-members.csv`.
@@ -27,8 +31,9 @@ are read from the repo-local, git-ignored `var/drumline/` (override with
 
 ## Usage
 
-Refresh order matters: `import-master` overwrites the outreach overlay, so run
-it **before** `name-resolutions`.
+Refresh order matters: run `audition-members` after `import-drumline` (so the
+segment exists), and `import-master` **before** `name-resolutions` (the seed
+overwrites the outreach overlay).
 
 ```bash
 # core + drumline migrations
@@ -37,6 +42,9 @@ uv run python -m reconcile_core.profile.drumline migrate --db var/contacts.db
 # membership + decision state
 uv run python -m reconcile_core.profile.drumline import-drumline \
     --tracker /path/Tracker.csv --db var/contacts.db
+
+# audition name-fills + new members (config: var/drumline/audition_members.json)
+uv run python -m reconcile_core.profile.drumline audition-members --db var/contacts.db
 
 # one-time outreach seed from the legacy master (before name-resolutions)
 uv run python -m reconcile_core.profile.drumline import-master \
@@ -50,5 +58,5 @@ uv run python -m reconcile_core.profile.drumline export-members \
     --out var/drumline-members.csv --db var/contacts.db
 ```
 
-`uv run pytest -q tests/test_drumline_profile.py` covers all of the above with
-synthetic, no-PII fixtures.
+`uv run pytest -q tests/test_drumline_profile.py tests/test_audition_members.py`
+covers all of the above with synthetic, no-PII fixtures.

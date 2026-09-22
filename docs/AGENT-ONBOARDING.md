@@ -39,6 +39,7 @@ uv run python -m reconcile_core audit
 # Drumline profile
 uv run python -m reconcile_core.profile.drumline migrate
 uv run python -m reconcile_core.profile.drumline import-drumline --tracker TRACKER.csv
+uv run python -m reconcile_core.profile.drumline audition-members
 uv run python -m reconcile_core.profile.drumline import-master   --input LEGACY-MASTER.csv
 uv run python -m reconcile_core.profile.drumline name-resolutions
 uv run python -m reconcile_core.profile.drumline export-members  --out MEMBERS.csv
@@ -110,6 +111,7 @@ ILL=~/repos/pngdeity/active/illini-drumline-contacts-alumni
 P="python -m reconcile_core.profile.drumline"
 uv run $P migrate            # same overlay as `migrate --profile drumline`
 uv run $P import-drumline --tracker "$ILL/deliverables/Tracker.csv"
+uv run $P audition-members
 uv run $P import-master   --input   "$ILL/working/backups/drumline-master-v2_pre_rename_20260921.csv"
 uv run $P name-resolutions
 uv run $P export-members  --out     /tmp/drumline-members.csv
@@ -161,8 +163,8 @@ unresolved_identities) is defined in
 5. **Curated decisions are data, not code.** The three name resolutions, the
    Rachel Misurac entity merge, and verification overrides live in
    `var/drumline/*.json` and the store. Preserve them.
-6. **Profile refresh order:** migrations → import-drumline → **import-master** →
-   name-resolutions → export-members (§1).
+6. **Profile refresh order:** migrations → import-drumline → audition-members →
+   **import-master** → name-resolutions → export-members (§1).
 7. **Migration rules:** the runner owns `schema_version`; migrations must not
    contain `BEGIN`/`COMMIT`; profile migrations use `CREATE TABLE IF NOT EXISTS`
    because imported legacy DBs carry unowned tables; profile migration dirs are
