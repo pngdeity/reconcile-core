@@ -1,6 +1,7 @@
 """Unified command-line interface for reconcile-core.
 
-Commands: ``migrate``, ``ingest``, ``resolve``, ``reconcile``, ``export``, ``audit``.
+Commands: ``migrate``, ``backup``, ``restore``, ``ingest``, ``resolve``,
+``duplicates``, ``merge``, ``split``, ``reconcile``, ``export``, ``audit``.
 The store is the source of truth; adapters feed it and exports are projections.
 """
 
@@ -19,6 +20,7 @@ from .io import export_contacts
 from .reconciler import Reconciler
 from .store import apply_migrations, connect, counts, find_entity_by_email
 from .store import backup as store_backup
+from .store import find_duplicates, merge_entities, split_entity
 from .store import get_entity_by_ref
 from .store.bridge import contact_from_entity, write_contact
 from .store.migrate import status as migration_status
@@ -31,7 +33,7 @@ def _db(args) -> Path | None:
 
 
 def _adapter(platform: str):
-    from .main import ADAPTER_CLASSES
+    from .adapters import ADAPTER_CLASSES
 
     cls = ADAPTER_CLASSES.get(platform)
     if cls is None:
@@ -114,6 +116,89 @@ def cmd_resolve(args) -> int:
     for platform, source_id in unresolved:
         table.add_row(str(platform), str(source_id))
     console.print(table)
+    return 0
+
+
+def cmd_duplicates(args) -> int:
+    db = _db(args)
+    apply_migrations(db)
+    conn = connect(db)
+    try:
+        candidates = find_duplicates(conn, min_score=args.min_score)
+    finally:
+        conn.close()
+
+    if not candidates:
+        console.print("[green]No duplicate candidates.[/green]")
+        return 0
+    table = Table(title=f"Duplicate candidates ({len(candidates)})")
+    for column in ("A", "B", "Score", "Shared", "Name sim"):
+        table.add_column(column)
+    for candidate in candidates:
+        table.add_row(
+            str(candidate.entity_a),
+            str(candidate.entity_b),
+            f"{candidate.score:.2f}",
+            ", ".join(candidate.shared) or "-",
+            f"{candidate.name_similarity:.2f}",
+        )
+    console.print(table)
+    console.print(
+        "[dim]Confirm a pair, then fold it with `merge A B` (zero loss).[/dim]"
+    )
+    return 0
+
+
+def cmd_merge(args) -> int:
+    db = _db(args)
+    apply_migrations(db)
+    conn = connect(db)
+    try:
+        stats = merge_entities(conn, args.source, args.target, reason=args.reason)
+        conn.commit()
+    except ValueError as exc:
+        console.print(f"[red]{exc}[/red]")
+        return 1
+    finally:
+        conn.close()
+
+    console.print(
+        f"[green]Merged entity {stats['source_id']} into "
+        f"{stats['target_id']}.[/green] Moved {stats['refs']} ref(s) and "
+        f"{stats['contact_points']} contact point(s); dropped "
+        f"{stats['duplicate_points']} duplicate point(s)."
+    )
+    return 0
+
+
+def cmd_split(args) -> int:
+    refs: list[tuple[str, str]] = []
+    for raw in args.ref or []:
+        if ":" not in raw:
+            console.print(f"[red]Invalid --ref {raw!r}; expected SOURCE:VALUE.[/red]")
+            return 1
+        source, value = raw.split(":", 1)
+        refs.append((source, value))
+
+    db = _db(args)
+    apply_migrations(db)
+    conn = connect(db)
+    try:
+        new_id = split_entity(
+            conn,
+            args.entity,
+            refs=refs,
+            contact_point_ids=args.point or [],
+            display_name=args.name,
+        )
+        conn.commit()
+    except ValueError as exc:
+        console.print(f"[red]{exc}[/red]")
+        return 1
+    finally:
+        conn.close()
+
+    console.print(f"[green]Created entity {new_id} from entity {args.entity}.[/green]")
     return 0
 
 
@@ -269,6 +354,41 @@ def build_parser() -> argparse.ArgumentParser:
     resolve = sub.add_parser("resolve", help="list unresolved identities")
     with_db(resolve)
     resolve.set_defaults(func=cmd_resolve)
+
+    duplicates = sub.add_parser("duplicates", help="suggest likely duplicate entities")
+    with_db(duplicates)
+    duplicates.add_argument(
+        "--min-score",
+        type=float,
+        default=0.5,
+        help="confidence floor (default 0.5)",
+    )
+    duplicates.set_defaults(func=cmd_duplicates)
+
+    merge = sub.add_parser("merge", help="fold one entity into another (zero loss)")
+    with_db(merge)
+    merge.add_argument("source", type=int, help="entity id to fold in and delete")
+    merge.add_argument("target", type=int, help="entity id to keep")
+    merge.add_argument("--reason", help="note recorded in the audit log")
+    merge.set_defaults(func=cmd_merge)
+
+    split = sub.add_parser("split", help="move refs/points onto a new entity")
+    with_db(split)
+    split.add_argument("entity", type=int, help="entity id to split from")
+    split.add_argument(
+        "--ref",
+        action="append",
+        metavar="SOURCE:VALUE",
+        help="external ref to move (repeatable)",
+    )
+    split.add_argument(
+        "--point",
+        action="append",
+        type=int,
+        help="contact point id to move (repeatable)",
+    )
+    split.add_argument("--name", help="display name for the new entity")
+    split.set_defaults(func=cmd_split)
 
     reconcile = sub.add_parser(
         "reconcile", help="diff an adapter export against store records"

@@ -5,7 +5,7 @@ import sys
 
 import pytest
 
-import reconcile_core.main as main_module
+import reconcile_core.adapters as adapters_module
 from reconcile_core import cli
 from reconcile_core.models import SocialHandle, StandardContact
 from reconcile_core.store import connect, counts
@@ -20,7 +20,7 @@ class FakeAdapter:
 
 @pytest.fixture
 def fake_adapter(monkeypatch):
-    monkeypatch.setitem(main_module.ADAPTER_CLASSES, "generic", FakeAdapter)
+    monkeypatch.setitem(adapters_module.ADAPTER_CLASSES, "generic", FakeAdapter)
     FakeAdapter.contacts = []
     yield FakeAdapter
     FakeAdapter.contacts = []

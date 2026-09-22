@@ -10,6 +10,14 @@ from .bridge import (
     find_entity_by_email,
     write_contact,
 )
+from .identity import (
+    DuplicateCandidate,
+    find_duplicates,
+    merge_entities,
+    name_similarity,
+    normalize_name,
+    split_entity,
+)
 from .labels import CANONICAL, SOCIAL_SERVICES, normalize_label, service_from_label
 from .store import (
     DEFAULT_DB,
@@ -36,6 +44,12 @@ __all__ = [
     "contact_from_entity",
     "find_entity_by_email",
     "write_contact",
+    "DuplicateCandidate",
+    "find_duplicates",
+    "merge_entities",
+    "name_similarity",
+    "normalize_name",
+    "split_entity",
     "default_backup_path",
     "restore",
     "snapshot",
