@@ -102,17 +102,17 @@ def write_contact(
     source_id: str | None = None,
     source: str = SOURCE,
     resolve_by_email: bool = True,
+    entity_id: int | None = None,
 ) -> dict:
     """Resolve ``contact`` to an entity and union its data in (zero loss).
 
-    Resolution order: the ``(platform, source_id)`` external ref, then a matching
-    email contact point, then a new person entity. Returns a stats dict:
-    ``{"entity_id", "created", "added": {kind: n}}``.
+    Resolution order: an explicit ``entity_id``, then the ``(platform, source_id)``
+    external ref, then a matching email contact point, then a new person entity.
+    Returns a stats dict: ``{"entity_id", "created", "added": {kind: n}}``.
     """
     sid = source_id if source_id is not None else contact.source_id
-    entity_id: int | None = None
 
-    if platform and sid:
+    if entity_id is None and platform and sid:
         entity_id = _store.get_entity_by_ref(conn, platform, str(sid))
 
     if entity_id is None and resolve_by_email:

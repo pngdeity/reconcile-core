@@ -21,12 +21,12 @@ Trust but verify. Claims in AGENTS.md are **assertions about the codebase**, not
 3. **Startup checklist** — run these at session open:
    - `rg choices src/reconcile_core/main.py` — does it match the `--platform` list below?
    - `rg "class.*Error" src/reconcile_core/google_adapter.py src/reconcile_core/loader.py` — do error classes match the error conventions table?
-   - `uv run pytest --collect-only -q | tail -1` — test count should be ~47.
+   - `uv run pytest --collect-only -q | tail -1` — test count should be 93.
 4. **Context file inventory.** If any of these files are missing or stale, note it:
    - `docs/RECONCILE-CORE-HANDOFF.md` — detailed technical spec.
    - `docs/ADAPTER_RESEARCH.md` — roadmap for Facebook, GitHub, X.com, Telegram.
    - `docs/SETUP.md` — end-user onboarding and prerequisites.
-   - `docs/CONSOLIDATION-PLAN.md` — proposed Option B consolidation (normalized store as master).
+   - `docs/CONSOLIDATION-PLAN.md` — the active consolidation plan (normalized store as master; phase log in §13).
 
 ## Repo-Specific Notes
 
@@ -42,10 +42,24 @@ These override generic inherited guidance that does not apply here:
 
 ```bash
 uv sync                                          # install dependencies
-uv run pytest                                    # full test suite (47 tests)
+uv run pytest                                    # full test suite (93 tests)
 uv run pytest tests/test_adapters.py -k test_linkedin  # single test
-uv run python -m reconcile_core.main --help      # CLI usage
+uv run python -m reconcile_core --help           # unified CLI
 ```
+
+The unified CLI treats the store as the source of truth:
+
+```bash
+uv run python -m reconcile_core migrate [--profile drumline] [--status]
+uv run python -m reconcile_core ingest EXPORT -p <linkedin|discord|matrix|generic>
+uv run python -m reconcile_core resolve
+uv run python -m reconcile_core reconcile EXPORT -p <platform> [--apply]
+uv run python -m reconcile_core export google-contacts --out DIR
+uv run python -m reconcile_core export drumline-members --out FILE
+uv run python -m reconcile_core audit
+```
+
+Legacy Google-API reconcile path (still supported):
 
 ```bash
 uv run python -m reconcile_core.main <file> -p <linkedin|discord|matrix|generic> [--dry-run]
@@ -61,7 +75,8 @@ uv run python -m reconcile_core.main <file> -p <linkedin|discord|matrix|generic>
 | `google_adapter.py` | `GoogleAdapter` — wraps `gws` via `subprocess`; `GWSCommandError` |
 | `loader.py` | `ContactLoader.apply_additions()` — PATCH contacts; `EtagsConflictError` |
 | `reconciler.py` | `Reconciler.reconcile()` — normalization-aware diff for emails, urls, handles, imClients, phones |
-| `main.py` | CLI loop; `ADAPTER_CLASSES` registry; `fuzzy_match_name()` |
+| `main.py` | Legacy Google-API reconcile loop; `ADAPTER_CLASSES` registry; `fuzzy_match_name()` |
+| `cli.py` | Unified CLI (`python -m reconcile_core`): `migrate`, `ingest`, `resolve`, `reconcile`, `export`, `audit` |
 | `adapters/` | `LinkedInAdapter`, `DiscordAdapter`, `MatrixAdapter`, `GenericCSVAdapter` |
 | `store/` | Canonical contacts store (source of truth): `migrations/*.sql`, `migrate.py` runner, `store.py` helpers, `labels.py` vocabulary, `bridge.py` (StandardContact <-> store), `import_db.py` (legacy-store import). Default DB path is repo-local `var/contacts.db` (`RECONCILE_CORE_DB` overrides; git-ignored). |
 | `io/` | Google Contacts CSV projection: `google_csv.py` (`import_contacts`, `export_contacts`) |
@@ -106,5 +121,5 @@ To add a new platform adapter:
 ## Known Limitations
 
 - **Stale-write risk:** Loader sends full merged field lists on update — a field added by another client between fetch and PATCH may be clobbered. Etag guards whole-contact conflicts only.
-- **Handles not reconciled:** `SocialHandle` field in `StandardContact` exists but is not processed by `Reconciler.reconcile()` or displayed in the CLI diff table.
+- **Handles:** reconciled since B3 — `Reconciler.reconcile()` unions them by `(platform, username)`, and the unified `reconcile` command reports them (the legacy `main.py` diff table still omits them).
 - **Discord adapter:** Returns empty generator on JSON parse errors rather than raising `ValueError` — silent data loss possible.

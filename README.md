@@ -24,18 +24,25 @@ conflict resolution — never overwriting without your confirmation.
 
 ```bash
 uv sync
+uv run python -m reconcile_core --help          # unified CLI
+```
+
+The store (`var/contacts.db`) is the source of truth:
+
+```bash
+uv run python -m reconcile_core migrate [--profile drumline] [--status]
+uv run python -m reconcile_core ingest Connections.csv -p linkedin
+uv run python -m reconcile_core reconcile Connections.csv -p linkedin         # dry run
+uv run python -m reconcile_core reconcile Connections.csv -p linkedin --apply
+uv run python -m reconcile_core export google-contacts --out out/
+uv run python -m reconcile_core audit
+```
+
+Legacy Google-API reconcile path (still supported):
+
+```bash
 uv run python -m reconcile_core.main Connections.csv --platform linkedin
-```
-
-Preview changes without writing:
-
-```bash
 uv run python -m reconcile_core.main Connections.csv --platform linkedin --dry-run
-```
-
-All platforms:
-
-```bash
 uv run python -m reconcile_core.main data.json -p discord
 uv run python -m reconcile_core.main matrix.json -p matrix
 uv run python -m reconcile_core.main contacts.csv -p generic
@@ -44,7 +51,7 @@ uv run python -m reconcile_core.main contacts.csv -p generic
 ## Operation
 
 1. **Extract** — Adapters parse platform-specific exports into a common `StandardContact` model
-2. **Map** — SQLite identity map links platform IDs to Google `resourceName` values, with fuzzy name matching fallback
+2. **Map** — platform IDs resolve to store entities via `external_refs` (the Google `resourceName` is one more ref), with fuzzy name matching fallback
 3. **Diff** — Normalization-aware comparison detects new emails, URLs, IMs, and phone numbers to add; display name conflicts require manual resolution
 4. **Apply** — Safe PATCH updates with etag-based concurrency control
 
