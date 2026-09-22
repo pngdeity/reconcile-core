@@ -55,3 +55,16 @@ adapters/   -->  reconciler.py  -->  loader.py  -->  google_adapter.py  -->  gws
                     |                                        |
                database.py                              Google Contacts
 ```
+
+## Agent context (APM)
+
+Agent instructions are managed by [APM](https://github.com/pngdeity/apm-user-repository) and are **generated, not tracked**:
+
+- Sources: `.apm/instructions/reconcile-core.instructions.md` (this repo) plus the `development-practices` APM package.
+- Generated outputs (git-ignored): `AGENTS.md`, `.github/instructions/*`, `.agents/skills/*`.
+
+Regenerate after pulling or changing instructions:
+
+```bash
+apm compile
+```

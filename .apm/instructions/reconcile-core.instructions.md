@@ -6,7 +6,7 @@ applyTo: "**"
 
 ETL pipeline to reconcile social identities (LinkedIn, Discord, Matrix, Generic CSV) into Google Contacts via the `gws` CLI.
 **Principle:** Zero-loss reconciliation — never overwrite without user confirmation.
-Full spec: [docs/RECONCILE-CORE-HANDOFF.md](./docs/RECONCILE-CORE-HANDOFF.md).
+Full spec: `docs/RECONCILE-CORE-HANDOFF.md`.
 
 ## Documentation Self-Healing
 
@@ -19,13 +19,24 @@ Trust but verify. Claims in AGENTS.md are **assertions about the codebase**, not
    - Changed CLI args? Update command examples.
    - Added/removed test files? Update the test count.
 3. **Startup checklist** — run these at session open:
-   - `grep choices src/reconcile_core/main.py` — does it match the `--platform` list below?
-   - `grep "class.*Error" src/reconcile_core/google_adapter.py src/reconcile_core/loader.py` — do error classes match the error conventions table?
+   - `rg choices src/reconcile_core/main.py` — does it match the `--platform` list below?
+   - `rg "class.*Error" src/reconcile_core/google_adapter.py src/reconcile_core/loader.py` — do error classes match the error conventions table?
    - `uv run pytest --collect-only -q | tail -1` — test count should be ~47.
 4. **Context file inventory.** If any of these files are missing or stale, note it:
    - `docs/RECONCILE-CORE-HANDOFF.md` — detailed technical spec.
    - `docs/ADAPTER_RESEARCH.md` — roadmap for Facebook, GitHub, X.com, Telegram.
    - `docs/SETUP.md` — end-user onboarding and prerequisites.
+   - `docs/CONSOLIDATION-PLAN.md` — proposed Option B consolidation (normalized store as master).
+
+## Repo-Specific Notes
+
+These override generic inherited guidance that does not apply here:
+
+- **Agent context is generated, not tracked.** `AGENTS.md` (and the `.github/instructions/`, `.agents/skills/` outputs) are produced by APM and are git-ignored. Regenerate with `apm compile` from `.apm/instructions/` plus the `development-practices` package. Do not hand-edit generated files.
+- **No `upstream` remote.** This repo's only remote is `origin`. Ignore generic "upstream-first" / `git refresh` / `upstream/master` guidance.
+- **Plan documents live in-repo under `docs/`.** The inherited `~/.gemini/PLANS.md` path is machine-specific; use `docs/` instead (see `docs/CONSOLIDATION-PLAN.md`).
+- **Only `AGENTS.md` exists as agent context.** There are no `CONTEXT.md`, `GEMINI.md`, `CLAUDE.md`, or `.codex`/`CODEX.md` files here.
+- **Use `rg` and `fd`.** `grep` is unavailable/denied in some agent environments.
 
 ## Quick Start
 
@@ -44,12 +55,12 @@ uv run python -m reconcile_core.main <file> -p <linkedin|discord|matrix|generic>
 
 | File | Purpose |
 |------|---------|
-| `models.py` | `StandardContact`, `ReconciliationDiff` — shared vocabulary, stdlib only |
+| `models.py` | `StandardContact`, `SocialHandle`, `ReconciliationDiff` — shared vocabulary, stdlib only |
 | `interfaces.py` | `BaseAdapter(ABC)`, `BasePersistence(ABC)` — contracts |
 | `database.py` | `SQLitePersistence` — identity_map, audit_log, unresolved_identities (WAL mode) |
 | `google_adapter.py` | `GoogleAdapter` — wraps `gws` via `subprocess`; `GWSCommandError` |
 | `loader.py` | `ContactLoader.apply_additions()` — PATCH contacts; `EtagsConflictError` |
-| `reconciler.py` | `Reconciler.reconcile()` — normalization-aware diff for emails, urls, imClients, phones |
+| `reconciler.py` | `Reconciler.reconcile()` — normalization-aware diff for emails, urls, imClients, phones (handles not yet reconciled) |
 | `main.py` | CLI loop; `ADAPTER_CLASSES` registry; `fuzzy_match_name()` |
 | `adapters/` | `LinkedInAdapter`, `DiscordAdapter`, `MatrixAdapter`, `GenericCSVAdapter` |
 | `test_data/` | Sample files for each adapter (no PII) |

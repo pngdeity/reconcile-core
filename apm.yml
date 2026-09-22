@@ -3,11 +3,11 @@ version: 1.0.0
 description: APM project for reconcile-core
 author: pngdeity
 targets:
-- opencode
-- copilot
+  - opencode
+  - copilot
 dependencies:
   apm:
-  - /home/nathan/repos/pngdeity/apm-user-repository/packages/development-practices
+    - /home/nathan/repos/pngdeity/active/apm-user-repository/packages/development-practices
   mcp: []
 includes: auto
 scripts: {}

@@ -7,12 +7,12 @@ This document outlines the non-code steps required to make `reconcile-core` func
 Ensure the following tools are installed and available in your `$PATH`:
 
 *   **`uv`**: Fast Python package manager.
-    *   *Arch Linux:* `sudo pacman -S uv`
+    *   *Arch Linux:* install `uv` from the official repositories with your own package manager (e.g. `pacman -S uv`, requires your privileges).
 *   **`gws`**: Google Workspace CLI.
     *   *Action:* Install via your preferred method and ensure the binary is named `gws`.
 *   **Python 3.14+**: The project runtime.
     *   *uv-managed:* `uv python install 3.14` (recommended, works cross-platform)
-    *   *Arch Linux:* `sudo pacman -S python`
+    *   *Arch Linux:* install Python via your own package manager (e.g. `pacman -S python`, requires your privileges).
 
 ## 2. Authentication & Authorization
 
