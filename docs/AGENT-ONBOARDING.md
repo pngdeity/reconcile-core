@@ -16,13 +16,12 @@ and hand you a concrete backlog for closing the remaining discovery gaps.
 Matrix, generic CSV) into a **canonical SQLite contacts store**. The store is the
 source of truth; Google Contacts is one more adapter/projection, not the master.
 
-Three CLI surfaces exist:
+Two CLI surfaces exist:
 
 | Surface | Command | Status |
 | --- | --- | --- |
 | Unified (preferred) | `python -m reconcile_core <command>` | current |
 | Drumline profile | `python -m reconcile_core.profile.drumline <command>` | current (domain profile) |
-| Legacy Google-API loop | `python -m reconcile_core.main <file> -p <platform>` | deprecated (ADR-0003) |
 
 Command reference:
 
@@ -33,6 +32,9 @@ uv run python -m reconcile_core backup [--out FILE]
 uv run python -m reconcile_core restore SNAPSHOT [--force]
 uv run python -m reconcile_core ingest EXPORT -p <linkedin|discord|matrix|generic>
 uv run python -m reconcile_core resolve
+uv run python -m reconcile_core duplicates [--min-score 0.5]
+uv run python -m reconcile_core merge SOURCE TARGET [--reason TEXT]
+uv run python -m reconcile_core split ENTITY [--ref SOURCE:VALUE] [--point ID] [--name NAME]
 uv run python -m reconcile_core reconcile EXPORT -p <platform> [--apply]
 uv run python -m reconcile_core export google-contacts --out DIR
 uv run python -m reconcile_core export drumline-members --out FILE
@@ -46,9 +48,6 @@ uv run python -m reconcile_core.profile.drumline import-master   --input LEGACY-
 uv run python -m reconcile_core.profile.drumline name-resolutions
 uv run python -m reconcile_core.profile.drumline export-members  --out MEMBERS.csv
 uv run python -m reconcile_core.profile.drumline needs-live-email --out NEEDS-LIVE-EMAIL.csv
-
-# Legacy Google-API loop
-uv run python -m reconcile_core.main <file> -p <platform> [--dry-run]
 ```
 
 Full design: `docs/CONSOLIDATION-PLAN.md` (phases B0–B7 and the phase log in §13).
@@ -137,15 +136,14 @@ seed (the dated backup is the surviving copy); `drumline-members.csv` is an
 | --- | --- |
 | `models.py` | `StandardContact`, `SocialHandle`, `ReconciliationDiff` (stdlib only) |
 | `interfaces.py` | `BaseAdapter`, `BasePersistence` contracts |
-| `store/` | Canonical store: `migrations/*.sql`, `migrate.py` runner, `store.py` helpers, `labels.py` vocabulary, `bridge.py` (`StandardContact` ↔ store), `import_db.py` (legacy import), `backup.py` (snapshot/restore/verify) |
+| `store/` | Canonical store: `migrations/*.sql`, `migrate.py` runner, `store.py` helpers, `labels.py` vocabulary, `bridge.py` (`StandardContact` ↔ store), `identity.py` (duplicate detection + lossless merge/split), `import_db.py` (legacy import), `backup.py` (snapshot/restore/verify) |
 | `io/` | Google Contacts CSV projection: `google_csv.py` (`import_contacts`, `export_contacts`) |
 | `reconciler.py` | Normalization-aware union: emails, urls, handles, imClients, phones |
 | `database.py` | `SQLitePersistence` (store-backed `BasePersistence` + `ingest`/`contact_from_entity`) |
-| `google_adapter.py` / `loader.py` | `gws` wrapper / etag-guarded PATCH (legacy Google path only) |
-| `cli.py` + `__main__.py` | Unified CLI: `migrate`, `ingest`, `resolve`, `reconcile`, `export`, `audit` |
-| `main.py` | Legacy Google-API reconcile loop (`ADAPTER_CLASSES`, `fuzzy_match_name`) |
+| `google_adapter.py` / `loader.py` | `gws` wrapper / etag-guarded PATCH (Google projection only) |
+| `cli.py` + `__main__.py` | Unified CLI: `migrate`, `backup`, `restore`, `ingest`, `resolve`, `duplicates`, `merge`, `split`, `reconcile`, `export`, `audit` |
 | `profile/drumline/` | Illini Drumline profile: overlay migration, importers, name resolutions, member export, config |
-| `adapters/` | LinkedIn, Discord, Matrix, Generic CSV |
+| `adapters/` | LinkedIn, Discord, Matrix, Generic CSV; `ADAPTER_CLASSES` registry (legacy `main.py` retired — ADR-0003) |
 | `test_data/corpus/` | No-PII golden corpus (C4) driving `tests/test_corpus.py`: multi-platform convergence, idempotency, collision surfacing, Google projection round-trip |
 
 Store schema (entities · external_refs · contact_points · addresses · aliases ·
@@ -231,7 +229,7 @@ work in small signed commits and update this doc as you go.
 | ID | Goal | Acceptance criteria | Effort |
 | --- | --- | --- | --- |
 | **D1** | Portable agent context | `apm.yml` dependency resolves via a portable git ref (or vendored package), not an absolute path; `apm compile` works on a clean machine; README documents it as step 0 | M |
-| **D2** | One CLI entry point | Legacy loop exposed as a subcommand (e.g. `python -m reconcile_core google-sync`); `main.py` no longer a separate user-facing entry; docs updated | S |
+| **D2** | One CLI entry point | **Done (C2, ADR-0004):** legacy `main.py` user-facing entry retired; `ADAPTER_CLASSES` lives in `adapters/` | S |
 | **D3** | One-command bootstrap | `scripts/bootstrap.sh` (or Makefile) runs `uv sync → apm compile → migrate → seed demo → pytest`; `docs/DATA.md` documents store provenance + the illini copy command | M |
 | **D4** | No-PII demo seed | `seed --demo` loads a synthetic store from `test_data/`; `profile.drumline config --check` fails loudly on missing configs; example config template bundled | M |
 | **D5** | Capture domain invariants | No-PII `docs/PROVENANCE.md` (or profile README section) documenting §3 items with cross-repo pointers; `profile.drumline refresh` runs the ordered pipeline in code | M |

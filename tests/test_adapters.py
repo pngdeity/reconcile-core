@@ -9,6 +9,7 @@ from reconcile_core.adapters.generic_csv import GenericCSVAdapter
 
 # --- LinkedIn ---
 
+
 def test_linkedin_extracts_emails_and_metadata(tmp_path):
     csv_path = tmp_path / "test.csv"
     csv_path.write_text(
@@ -36,9 +37,7 @@ def test_linkedin_missing_header_raises(tmp_path):
 def test_linkedin_skips_empty_rows(tmp_path):
     csv_path = tmp_path / "test.csv"
     csv_path.write_text(
-        "First Name,Last Name,URL\n"
-        "Alice,Smith,https://linkedin.com/in/alice\n"
-        ",,\n"
+        "First Name,Last Name,URL\nAlice,Smith,https://linkedin.com/in/alice\n,,\n"
     )
     adapter = LinkedInAdapter()
     contacts = list(adapter.extract(csv_path))
@@ -54,11 +53,24 @@ def test_linkedin_missing_file(tmp_path):
 
 # --- Discord ---
 
+
 def test_discord_extracts_friends_only(tmp_path):
     data = [
-        {"id": "1", "type": 1, "user": {"username": "friend1", "discriminator": "1234", "id": "111"}},
-        {"id": "2", "type": 2, "user": {"username": "blocked", "discriminator": "0", "id": "222"}},
-        {"id": "3", "type": 1, "user": {"username": "friend2", "discriminator": "5678", "id": "333"}},
+        {
+            "id": "1",
+            "type": 1,
+            "user": {"username": "friend1", "discriminator": "1234", "id": "111"},
+        },
+        {
+            "id": "2",
+            "type": 2,
+            "user": {"username": "blocked", "discriminator": "0", "id": "222"},
+        },
+        {
+            "id": "3",
+            "type": 1,
+            "user": {"username": "friend2", "discriminator": "5678", "id": "333"},
+        },
     ]
     json_path = tmp_path / "relationships.json"
     json_path.write_text(json.dumps(data))
@@ -86,6 +98,7 @@ def test_discord_malformed_json_returns_empty(tmp_path):
 
 # --- Matrix ---
 
+
 def test_matrix_simple_list_format(tmp_path):
     data = [
         {"mxid": "@alice:matrix.org", "display_name": "Alice"},
@@ -110,7 +123,7 @@ def test_matrix_account_data_format(tmp_path):
                 "content": {
                     "@alice:matrix.org": ["!room1:matrix.org"],
                     "@bob:matrix.org": ["!room2:matrix.org"],
-                }
+                },
             }
         ]
     }
@@ -131,6 +144,7 @@ def test_matrix_missing_file(tmp_path):
 
 
 # --- Generic CSV ---
+
 
 def test_generic_csv_all_fields(tmp_path):
     csv_path = tmp_path / "test.csv"
@@ -179,3 +193,10 @@ def test_generic_csv_skips_empty_rows(tmp_path):
     adapter = GenericCSVAdapter()
     contacts = list(adapter.extract(csv_path))
     assert len(contacts) == 1
+
+
+def test_adapter_registry_exposes_all_platforms():
+    from reconcile_core.adapters import ADAPTER_CLASSES
+
+    assert set(ADAPTER_CLASSES) == {"linkedin", "discord", "matrix", "generic"}
+    assert all(ADAPTER_CLASSES.values())

@@ -103,8 +103,9 @@ If no `Name` column is found, the adapter will raise an error listing the availa
     uv run python -m reconcile_core export google-contacts --out out/
     ```
 
-The legacy `python -m reconcile_core.main <file> -p <platform>` loop is
-deprecated and only relevant for Google-side updates (ADR-0003).
+The legacy `python -m reconcile_core.main` loop was removed (ADR-0003). Resolve
+duplicates with `python -m reconcile_core duplicates`, then fold them with
+`merge SOURCE TARGET` (zero-loss) or undo an over-merge with `split`.
 
 ## 5. Persistence
 

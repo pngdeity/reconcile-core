@@ -3,7 +3,8 @@
 > **Status (2026-09-21): partially superseded.** The canonical store maps
 > identities through `external_refs` (not `identity_map`), and the project's
 > direction and boundaries are settled in `docs/adr/` (ADR-0001–0004). The
-> legacy `main.py` Google-API entry is slated for retirement (ADR-0003). Where
+> legacy `main.py` Google-API entry was retired (ADR-0003); the adapter registry
+> now lives in `adapters/__init__.py`. Where
 > this spec and the ADRs disagree, the ADRs win; the per-agent sections below
 > are retained as design history.
 
