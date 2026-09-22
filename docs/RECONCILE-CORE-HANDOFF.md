@@ -1,5 +1,12 @@
 # RECONCILE-CORE-HANDOFF.md
 
+> **Status (2026-09-21): partially superseded.** The canonical store maps
+> identities through `external_refs` (not `identity_map`), and the project's
+> direction and boundaries are settled in `docs/adr/` (ADR-0001–0004). The
+> legacy `main.py` Google-API entry is slated for retirement (ADR-0003). Where
+> this spec and the ADRs disagree, the ADRs win; the per-agent sections below
+> are retained as design history.
+
 ## 0. Project Vision & Orchestrator Handoff
 
 **Project Name:** `reconcile-core`
@@ -29,6 +36,7 @@
 *   **Interface Contract (`interfaces.py`):**
     *   `BaseAdapter(ABC)`: Must implement `extract(file_path: Path) -> Generator[StandardContact, None, None]`.
     *   `BasePersistence(ABC)`: Must implement `get_resource_name(platform, source_id)`, `set_mapping(platform, source_id, resource_name)`, and `list_unresolved()`.
+        *   **Note (ADR-0001/0002):** the mapping target is now a **store entity** via `external_refs`; a Google `resourceName` is stored as the entity's `google` ref, so one entity can carry many platform identities. The method names are retained.
 *   **Constraints:** Use Python 3.14+ type hinting (`dataclasses`). No external dependencies (Standard Library only).
 
 ---
@@ -59,6 +67,7 @@
     *   Implement "Fuzzy Match" helper: Before asking the user, check the DB for similar names to suggest a `resource_name`.
     *   Provide a "Reset" method to clear mappings for a specific platform.
 *   **Arch Specifics:** Initialize DB locally. Default path should be `$XDG_DATA_HOME/reconcile-core/identities.db` or `~/.config/reconcile-core/identities.db`.
+    *   **Superseded (ADR-0001–0003):** `identity_map` was replaced by the canonical store's `external_refs`; the default store is now `$XDG_DATA_HOME/reconcile-core/contacts.db` (ADR-0002); and the fuzzy-match helper moves into store-side identity resolution (ADR-0003, roadmap C2).
 *   **Constraints:** Use the `sqlite3` standard library. Ensure methods are idempotent.
 
 ---
@@ -103,7 +112,7 @@
 ## 5. Agent 5: The Judge (Reconciler & UX)
 
 **Core Mission:** The interactive CLI logic.
-**File Responsibility:** `reconciler.py`, `main.py`
+**File Responsibility:** `reconciler.py`, `cli.py` (`main.py` is being retired — ADR-0003)
 
 ### Specifications
 *   **The Orchestration Loop:**
@@ -135,6 +144,6 @@
 ### Overarching Constraints & Instructions
 1.  **Strict Isolation:** Do not modify files outside assigned responsibility unless explicitly requested.
 2.  **Mocking:** If a dependent component is "PENDING," use a Mock class defined in `interfaces.py` to continue development.
-3.  **Error Handling:** All agents must catch `SubprocessError` (for `gws`) or `sqlite3.Error` and bubble them up to the Judge for graceful user reporting. If `gws` fails (e.g., no internet), the system must exit without corrupting the SQLite map.
+3.  **Error Handling:** All agents must catch `GWSCommandError` (the `gws` wrapper) or `sqlite3.Error` and bubble them up to the CLI for graceful user reporting. If `gws` fails (e.g., no internet), the system must exit without corrupting the SQLite map.
 4.  **No PII:** Never hardcode personal contact info in tests or logs. Ensure email addresses and phone numbers are not written to standard log files. Use `test_data/` for sample files.
 5.  **Idempotency:** Running the same extraction (e.g., LinkedIn CSV) twice should result in "No changes detected."

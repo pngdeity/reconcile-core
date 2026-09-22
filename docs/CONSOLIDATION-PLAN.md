@@ -1,6 +1,6 @@
 # CONSOLIDATION-PLAN.md — Option B: `reconcile-core` as the umbrella
 
-**Status:** active — B0–B6 + audition/needs-live-email done; B7 blocked (Google cooldown). See §13.
+**Status:** active — B0–B6 + audition/needs-live-email done; direction and boundaries settled (ADR-0001–0004). B7 out of scope. See §13.
 **Created:** 2026-09-21
 **Origin:** Illini Drumline contacts project (`~/repos/pngdeity/active/illini-drumline-contacts-alumni`)
 decentered from its deadline; its normalized SQLite store is proposed as the
@@ -116,7 +116,7 @@ reconcile-core migrate            # schema migrations
 | **B4** | Migrate the illini DB; verify counts/parity | counts match |
 | **B5** | Drumline profile (Tracker, decisions, members export); point group tooling | drumline tests pass |
 | **B6** | Unify CLI; rewrite README/SETUP; regenerate `AGENTS.md` via `apm compile`; retire/archive illini | docs consistent |
-| **B7** | Resume Google Groups adds on the new pipeline | 181 remaining progress |
+| **B7** | Resume Google Groups adds on the new pipeline | 181 remaining progress; **out of scope per ADR-0001** |
 
 ## 9. Repo / PII / ops
 
@@ -128,19 +128,29 @@ reconcile-core migrate            # schema migrations
 
 ## 10. Risks & decisions to settle
 
+All settled 2026-09-21 in `docs/adr/` (ADR-0001–0003). Original options kept for
+history.
+
 1. **`gws` direction:** keep as an optional store->Google writer, or drop it and
-   use the CSV import path only? (Recommend keep, but store-authoritative.)
-2. **Store location:** XDG default vs repo-local `working/`? (Recommend XDG
-   default + `--db` override.)
+   use the CSV import path only? **Decided (ADR-0003):** keep as an optional
+   writer; the store is authoritative.
+2. **Store location:** XDG default vs repo-local `working/`? **Decided
+   (ADR-0002):** XDG default + `--db`/`RECONCILE_CORE_DB` override; repo-local
+   `var/` only for the drumline reference profile.
 3. **Dependencies:** core stays stdlib-only; `rich` only in the CLI layer?
+   **Decided (ADR-0002):** yes.
 4. **Name:** keep `reconcile-core`, or rename (e.g. `contacts-core`)?
-5. **Drumline location:** in-repo profile vs consuming the store from its own repo.
-6. **Illini disposition:** archive after parity, or leave active as a domain consumer?
+   **Decided (ADR-0002):** keep.
+5. **Drumline location:** in-repo profile vs consuming the store from its own
+   repo. **Decided (ADR-0001/0002):** in-repo reference consumer.
+6. **Illini disposition:** archive after parity, or leave active as a domain
+   consumer? **Decided (2026-09-21):** leave active; not archived.
 
 ## 11. Effort
 
 Roughly **5-6 focused days** (B0-B6), dominated by B3 (bridge + reconciler over
-the store) and B5 (drumline profile). B7 is gated only by the Google cooldown.
+the store) and B5 (drumline profile). B7 was gated only by the Google cooldown;
+it is now out of scope (ADR-0001).
 This is a migration and unification, not a rewrite — the data and half the code
 carry over.
 
@@ -161,7 +171,8 @@ This is the green baseline that every later phase must preserve.
 - **B2 DONE (2026-09-21):** ported the Google Contacts CSV projection into `src/reconcile_core/io/google_csv.py` (`import_contacts`, `export_contacts`, 62/61-column headers, marker->segment bridge); `tests/test_io_google_csv.py` round-trips a synthetic no-PII CSV cell-for-cell. Suite **67 passing**. Validated on the real illini `Contacts.csv` (1,505 rows) with zero cell differences.
 - **B3 DONE (2026-09-21):** added `src/reconcile_core/store/bridge.py` (`write_contact` resolves `(platform, source_id)` -> email -> new entity and unions emails/phones/urls/handles/imClients with zero loss; `contact_from_entity` reconstructs a `StandardContact` from store points); `SQLitePersistence` gained `ingest`, `contact_from_entity`, `contact_for_identity`, `find_entity_by_email`; the `Reconciler` now unions **handles** by `(platform, username)`. `tests/test_bridge.py` (6) + handle tests in `tests/test_reconciliation.py`. Suite **75 passing**.
 - **B5 DONE (2026-09-21):** added `src/reconcile_core/profile/drumline/` (migration `0002_drumline_outreach.sql`; `import_drumline` for Tracker links/segment/decision state; `name_resolutions`; `import_master` outreach seed; `export_members` person CSV; `config.py` reading PII configs from git-ignored `var/drumline/`); `store/migrate.py` `discover`/`apply_migrations`/`status` now accept `extra_dirs` so profiles own their migrations; single CLI `python -m reconcile_core.profile.drumline <command>`. Fixed a latent illini bug (address-map entries now resolve by `tracker_id` ref). `tests/test_drumline_profile.py` (5). Acceptance against the real imported store: Segment 389, decision_state 6, `export_members` produced **389 rows / 18 cols with id sets equal and 0 cell differences** vs illini `drumline-members.csv` (after the correct order: import-master before name-resolutions). Suite **84 passing**.
-- **B4 DONE (2026-09-21):** store is **repo-local** for now (`var/contacts.db`, git-ignored; `RECONCILE_CORE_DB` override) — decision #2 revisited later. Added `src/reconcile_core/store/import_db.py` (+ CLI) to import the legacy illini DB and **re-stamp `schema_version`** to this package's consolidated baseline (legacy 1-4 would otherwise shadow future migrations); unowned tables (e.g. `drumline_outreach`) survive and become pending migrations when their migration is added in B5. Imported the real illini store and verified acceptance: **1,506 entities, 389-person segment, 243 external_status, 6 decision_state**, and CSV export parity against illini `Contacts.csv` (**1,505 rows, id sets equal, 0 cell differences**). `tests/test_import_db.py` (4). Suite **79 passing**.
+- **B4 DONE (2026-09-21):** store was **repo-local** at this phase (`var/contacts.db`, git-ignored; `RECONCILE_CORE_DB` override); decision #2 was later settled as an XDG default with repo-local retained for the drumline profile (ADR-0002). Added `src/reconcile_core/store/import_db.py` (+ CLI) to import the legacy illini DB and **re-stamp `schema_version`** to this package's consolidated baseline (legacy 1-4 would otherwise shadow future migrations); unowned tables (e.g. `drumline_outreach`) survive and become pending migrations when their migration is added in B5. Imported the real illini store and verified acceptance: **1,506 entities, 389-person segment, 243 external_status, 6 decision_state**, and CSV export parity against illini `Contacts.csv` (**1,505 rows, id sets equal, 0 cell differences**). `tests/test_import_db.py` (4). Suite **79 passing**.
 - **Audition-2025 integration (2026-09-21):** new profile importer `profile/drumline/audition_members.py` (+ CLI command `audition-members`) applies `var/drumline/audition_members.json`: 14 name-fills on nameless member entities and 24 new member entities (anchored by an `audition-2025` external ref, added to the alumni segment, seeded `Verified` with `review_status='Confirmed via audition results'`). Segment 389 → **413** (98 nameless remain); `tests/test_audition_members.py` (4). Idempotent; name-fills only touch empty fields and report conflicts. Regenerated `drumline-members.csv` (413 data rows); `Contacts.csv` unchanged (new members have no Google refs). Suite **97 passing**.
 - **B6 DONE (2026-09-21):** unified CLI `python -m reconcile_core` (`src/reconcile_core/cli.py` + `__main__.py`): `migrate` (optional `--profile drumline`, `--status`), `ingest`, `resolve`, `reconcile` (dry-run default; `--apply` performs the zero-loss union), `export google-contacts|drumline-members`, `audit`. `store/bridge.write_contact` gained an explicit `entity_id` so additions can be applied to a known entity. Legacy `main.py` Google-API path retained. Agent-context Quick Start, structure table, and README updated (test count 93; handles-reconciled limitation removed). `tests/test_cli.py` (9). Suite **93 passing**. **The illini project is NOT archived — user decision (2026-09-21).**
 - **B7-prep DONE (2026-09-21):** added `profile/drumline/needs_live_email.py` + the `needs-live-email` CLI command, deriving the research backlog from the store (rule: a segment member needs a live email when they have no email contact point, or every email is non-live — `bouncing`/`invited` — in `external_status`; reachability is per person). Replaces the hand-maintained illini CSV, which had drifted. Derived 63 rows for the current store. `tests/test_needs_live_email.py` (2). Suite **99 passing**.
+- **C0 DONE (2026-09-21):** direction and boundaries settled in `docs/adr/` (ADR-0001–0004): emphasis on the general engine (P1); XDG store default with repo-local for the drumline profile; Google Contacts as one projection with the legacy `main.py` entry slated for retirement; and the P1 delivery roadmap. B7 (Google Groups) is out of scope; the drumline profile is a reference consumer.

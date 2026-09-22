@@ -28,6 +28,7 @@ Trust but verify. Claims in AGENTS.md are **assertions about the codebase**, not
    - `docs/ADAPTER_RESEARCH.md` — roadmap for Facebook, GitHub, X.com, Telegram.
    - `docs/SETUP.md` — end-user onboarding and prerequisites.
    - `docs/CONSOLIDATION-PLAN.md` — the active consolidation plan (normalized store as master; phase log in §13).
+   - `docs/adr/` — architecture decision records: authoritative direction and the P1 delivery roadmap.
 
 ## Repo-Specific Notes
 

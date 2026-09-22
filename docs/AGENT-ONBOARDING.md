@@ -205,13 +205,14 @@ confirmation.
 
 ## 6. Existing open decisions & backlog
 
-From `docs/CONSOLIDATION-PLAN.md`:
+Settled by `docs/adr/` (ADR-0001–0004):
 
-- **§10 decisions:** `gws` direction; store location (repo-local `var/` now, XDG
-  default deferred); stdlib-core-only dependency rule; project name; drumline
-  location; illini disposition (**decided: do not archive**).
-- **B7 (blocked):** resume the Google Groups additions (181 remaining) — gated by
-  Google's daily-limit cooldown, external to this repo.
+- **§10 decisions:** all resolved — `gws` is an optional writer (ADR-0003); the
+  store is XDG-default with `--db` (ADR-0002); core stays stdlib-only
+  (ADR-0002); the name stays `reconcile-core` (ADR-0002); the drumline is an
+  in-repo reference consumer (ADR-0001); illini is not archived.
+- **Out of scope:** B7 (Google Groups adds, 181 remaining) — the drumline is a
+  reference consumer, not the roadmap (ADR-0001).
 - **Illini-side:** the `working/*.json` maps cleanup (recorded in the illini TODO).
 
 ---
@@ -229,12 +230,16 @@ work in small signed commits and update this doc as you go.
 | **D4** | No-PII demo seed | `seed --demo` loads a synthetic store from `test_data/`; `profile.drumline config --check` fails loudly on missing configs; example config template bundled | M |
 | **D5** | Capture domain invariants | No-PII `docs/PROVENANCE.md` (or profile README section) documenting §3 items with cross-repo pointers; `profile.drumline refresh` runs the ordered pipeline in code | M |
 | **D6** | CI | GitHub Actions job runs `ruff check` + `pytest` on push/PR; badge in README | S |
-| **D7** | Configuration reference | Document `RECONCILE_CORE_DB`, `RECONCILE_CORE_DRUMLINE_CONFIG`, default paths, and the open XDG decision | S |
+| **D7** | Configuration reference | Document `RECONCILE_CORE_DB`, `RECONCILE_CORE_DRUMLINE_CONFIG`, and default paths (fixed by ADR-0002) | S |
 | **D8** | Migration guide | `docs/MIGRATIONS.md` (or store README section): authoring rules, `extra_dirs`, baseline re-stamp rationale, `IF NOT EXISTS` requirement | S |
 | **D9** | `gws` clarity | README states the unified path needs no `gws` unless syncing to Google | S |
 | **D10** | Backlog tracking | Convert §6 open decisions + this table into GitHub issues (or `docs/OPEN-ITEMS.md`) as the single backlog | S |
 | **D11** | Cross-repo pointer | README links the illini project as the data/PII source and explains the profile relationship | S |
 | **D12** | Self-healing enforcement | Avoid hardcoded test counts in docs (or add a test asserting the README count matches `pytest --collect-only`) | S |
+
+> **Authoritative sequencing:** `docs/adr/0004-p1-delivery-roadmap.md` supersedes
+> this table for ordering. It removes D2 and D9 (ADR-0003 / C7), merges D5+D11
+> and D3+D4, and adds the C-series capability items (C1–C8).
 
 **Definition of done for the backlog:** a clone on a clean machine can run the
 bootstrap (D1/D3/D6), exercise the system without PII (D4), and a new agent can
@@ -247,6 +252,7 @@ learn the invariants without leaving this repo (D5/D7/D8/D10/D11).
 - `README.md` — usage and architecture overview.
 - `CONTRIBUTING.md` — how to regenerate agent context.
 - `docs/CONSOLIDATION-PLAN.md` — design, phases, decisions, phase log.
+- `docs/adr/` — architecture decision records: authoritative direction (P1 focus, store/dependency boundaries, Google-as-projection) and the delivery roadmap.
 - `docs/RECONCILE-CORE-HANDOFF.md` — detailed technical spec.
 - `docs/ADAPTER_RESEARCH.md` — platform roadmap (Facebook, GitHub, X.com, Telegram).
 - `docs/SETUP.md` — prerequisites (`uv`, `gws`, Python 3.14).
