@@ -47,6 +47,37 @@ def test_migrate_status_and_profile(tmp_path, capsys):
     assert version == 2
 
 
+def test_migrate_status_reports_without_applying(tmp_path, capsys):
+    db = tmp_path / "c.db"
+    assert cli.main(["migrate", "--db", str(db), "--status"]) == 0
+    out = capsys.readouterr().out
+    assert "init" in out
+    assert "pending" in out
+    assert "Store schema at version 0" in out
+    conn = connect(db)
+    try:
+        tables = {
+            row[0]
+            for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        }
+    finally:
+        conn.close()
+    assert "entities" not in tables
+
+
+def test_migrate_status_lists_profile_migrations(tmp_path, capsys):
+    db = tmp_path / "c.db"
+    assert cli.main(["migrate", "--db", str(db), "--profile", "drumline"]) == 0
+    capsys.readouterr()
+    assert (
+        cli.main(["migrate", "--db", str(db), "--profile", "drumline", "--status"]) == 0
+    )
+    out = capsys.readouterr().out
+    assert "drumline_outreach" in out
+    assert "applied" in out
+    assert "Store schema at version 2" in out
+
+
 def test_ingest_creates_entity(tmp_path, fake_adapter):
     db = tmp_path / "c.db"
     fake_adapter.contacts = [

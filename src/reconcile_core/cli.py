@@ -41,15 +41,26 @@ def _adapter(platform: str):
 
 def cmd_migrate(args) -> int:
     db = _db(args)
+    profile = getattr(args, "profile", None)
+    if getattr(args, "status", False):
+        if profile == "drumline":
+            from .profile.drumline.migrate import profile_status
+
+            rows = profile_status(db)
+        else:
+            rows = migration_status(db)
+        for version, name, applied in rows:
+            state = "applied" if applied else "pending"
+            console.print(f"  {version:04d}  {name:32s} {state}")
+        current = max((v for v, _, applied in rows if applied), default=0)
+        console.print(f"[green]Store schema at version {current}[/green]")
+        return 0
     version = apply_migrations(db)
-    if getattr(args, "profile", None) == "drumline":
+    if profile == "drumline":
         from .profile.drumline.migrate import apply_profile_migrations
 
         version = apply_profile_migrations(db)
     console.print(f"[green]Store schema at version {version}[/green]")
-    if getattr(args, "status", False):
-        for row in migration_status(db):
-            console.print(f"  {row}")
     return 0
 
 
