@@ -49,6 +49,8 @@ uv run python -m reconcile_core.profile.drumline import-master   --input LEGACY-
 uv run python -m reconcile_core.profile.drumline name-resolutions
 uv run python -m reconcile_core.profile.drumline export-members  --out MEMBERS.csv
 uv run python -m reconcile_core.profile.drumline needs-live-email --out NEEDS-LIVE-EMAIL.csv
+uv run python -m reconcile_core.profile.drumline import-group-status --input MEMBERS-EXPORT.csv
+uv run python -m reconcile_core.profile.drumline group-lists --target-dir DIR --run-dir DIR
 ```
 
 Full design: `docs/CONSOLIDATION-PLAN.md` (phases B0–B7 and the phase log in §13).
@@ -127,6 +129,8 @@ uv run $P import-master   --input   "$ILL/working/backups/drumline-master-v2_pre
 uv run $P name-resolutions
 uv run $P export-members  --out     /tmp/drumline-members.csv
 uv run $P needs-live-email --out    /tmp/group_needs_live_email.csv
+uv run $P import-group-status --input /tmp/group-membership.csv
+uv run $P group-lists --target-dir /tmp/gl --run-dir /tmp/gl-run
 ```
 
 `import-master` **overwrites** the `drumline_outreach` overlay, so it must run

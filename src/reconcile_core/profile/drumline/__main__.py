@@ -12,6 +12,8 @@ Commands:
     import-master      seed the outreach overlay from the legacy master CSV
     export-members     generate the person-level member CSV
     needs-live-email   derive the needs-live-email backlog from the store
+    import-group-status import a Google Groups export into external_status
+    group-lists        build the Google Groups target and run lists
 
 Run ``<command> --help`` for options. See the package README for the PII
 conventions (configs in ``var/drumline/``; data paths passed in).
@@ -30,6 +32,8 @@ COMMANDS = (
     "import-master",
     "export-members",
     "needs-live-email",
+    "import-group-status",
+    "group-lists",
 )
 
 
@@ -47,8 +51,10 @@ def main(argv: list[str] | None = None) -> int:
     from . import (
         audition_members,
         export_members,
+        group_lists,
         idl_roster,
         import_drumline,
+        import_group_status,
         import_master,
         migrate,
         name_resolutions,
@@ -64,6 +70,8 @@ def main(argv: list[str] | None = None) -> int:
         "import-master": import_master.main,
         "export-members": export_members.main,
         "needs-live-email": needs_live_email.main,
+        "import-group-status": import_group_status.main,
+        "group-lists": group_lists.main,
     }
     sys.argv = [f"reconcile_core.profile.drumline {command}", *rest]
     return dispatch[command]()
