@@ -113,11 +113,20 @@ Two different facts, two different places:
 undecided. `(bongo)`, `(timbali)` and `B-Line` → review queue, never
 auto-assigned.
 
-## Second source: the audition documents (2025)
+## Second source: the audition documents (2025 and 2026)
 
-Membership does not come only from the grid. Two PDFs hold the 2025 cycle (they
-live in `~/downloads` today and must be versioned under `source/` before their
-claims are loaded, or the provenance is sand again):
+Membership does not come only from the grid. Two PDFs are in play — one for the
+2025 season, one for the 2026 auditions (they live in `~/downloads` today and must
+be versioned under `source/` before their claims are loaded, or the provenance is
+sand again):
+
+**Season dating rule (confirmed 2026-09-23).** A season labelled `YYYY` begins in
+August `YYYY` and runs through the following winter, and its auditions happen the
+April shortly before that opening — in the same calendar year, not the previous
+one. The audition's calendar year therefore **is** the `season_year`, with no
+offset. The beatrack grid dates seasons the same way (its newest column header is
+`2023`, and the parser reads the leading four digits verbatim), so the two sources
+date seasons identically.
 
 - `Marching Illini.pdf` — **FINAL RESULTS**, the authoritative confirmed-membership
   document. It names the season in prose (**2025**) and lists 38 people: Snares 12,
@@ -143,11 +152,19 @@ Jerger, Harshbarger, Vanderkarr, H. Lester, Z. Evans, Anderson, L. Brown, Coyle,
 McClendon, E. Nelson, Boone), and exactly one final-results person has no entity
 at all (**Zane Evans**). Alumni segment: 713 → **697** after the removal.
 
-Unresolved: the candidate PDF's date reads `SUNDAY APRIL 26`, but 2025-04-26 was a
-**Saturday** and 2026-04-26 is a **Sunday** — and the same template still carries
-the unreplaced `person.firstname!` merge token, so none of its boilerplate is
-trustworthy. Whether it is the same 2025 cycle or a later one is unconfirmed, as
-is the existence of a **2024** results document to fill the 2023→2025 gap.
+**Cycle of the audition PDF (resolved 2026-09-23).** It reads `SUNDAY APRIL 26`;
+2025-04-26 was a Saturday and **2026-04-26 is a Sunday**, so by the dating rule
+above it is the **2026** audition cycle, not the 2025 one. That is also why 2025
+members reappear on it as candidates (Hawkins, Zhang, Pagan, Perlstadt, Sweitzer,
+Case, Bailey, Mathew, Bartling, Campbell) — nobody is a candidate again in a cycle
+whose results already listed them. The 16 people removed above were therefore
+never 2025 members and are not 2025 rejects: they are unfilled candidates for the
+2026 line.
+
+Still open: whether a **2024** results document exists (it would fill the
+2023→2025 gap) and whether a **2026** results document exists (it would confirm or
+finally exclude those candidates, and would be the first affiliation newer than
+2023).
 
 ## Backfill order
 
