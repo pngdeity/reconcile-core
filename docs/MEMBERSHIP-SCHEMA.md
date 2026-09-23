@@ -137,7 +137,18 @@ date seasons identically.
   required for full consideration of being selected".
 
 Two consequences already reflected above: geometry is not always a grid (hence
-`pN:lN`), and slots are not always numeric (hence `slot_label`).
+`pN:lN`), and slots are not always numeric (hence `slot_label`). `Kicker` is
+**not a separate instrument**: it is the seventh bass drum, a position inside
+`basses` (user ruling 2026-09-23), so it is captured as a named slot within that
+section and never as its own section or role.
+
+**Source strength (user ruling 2026-09-23).** The official Instagram feed
+(`@illinidrumline`) counts as **sufficient membership evidence**, at the user's
+discretion — it is the organisation's own account, not an anonymous feed. The
+birthday posts themselves are irrelevant (a birthday is not a contact fact); the
+value is the **name + nickname pairs** of current members. Those are inventory
+claims (`alias_type='nickname'`); only a nickname someone genuinely goes by
+reaches the `entities.nickname` scalar.
 
 **Correction (2026-09-23).** The earlier `audition-2025` intake was built from
 **both** documents, so **16 of its 24 "new members" were final-round candidates
