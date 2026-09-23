@@ -164,3 +164,44 @@ def test_held_addresses_leave_the_target(store, tmp_path):
     assert _read(target_dir / "group_target.csv") == []
     assert "held@example.com" in _txt(run_dir / "skip_members.txt")
     assert _txt(run_dir / "google_remaining.txt") == []
+
+
+def test_invited_is_distinct_from_member_and_absent(store, tmp_path):
+    """A pending invitation is not a member: not a recipient, not a resubmit."""
+    conn = store["conn"]
+    invited = store["member"]("Invited Person", ["invited@example.com"])
+    store["member"]("Absent Person", ["absent@example.com"])
+    _status(conn, invited, "invited@example.com", "invited", "2026-09-23")
+    conn.commit()
+
+    target_dir, run_dir = _run(store, tmp_path)
+
+    target = {
+        row["Email"]: row["In_Group"]
+        for row in _read(target_dir / "group_target.csv")
+    }
+    assert target == {"invited@example.com": "invited", "absent@example.com": "no"}
+
+    # Only the never-contacted address is submitted; the invite is left alone.
+    remaining = [row["Email"] for row in _read(target_dir / "group_remaining.csv")]
+    assert remaining == ["absent@example.com"]
+    assert _txt(run_dir / "other_remaining.txt") == ["absent@example.com"]
+    assert "invited@example.com" in _txt(run_dir / "skip_members.txt")
+
+
+def test_invitation_is_not_a_member_even_with_a_member_variant(store, tmp_path):
+    """A person can be a member on one address and merely invited on another."""
+    conn = store["conn"]
+    person = store["member"]("Two Addresses", ["two@gmail.com", "two@example.com"])
+    _status(conn, person, "two@gmail.com", "member", "2026-09-23")
+    _status(conn, person, "two@example.com", "invited", "2026-09-23")
+    conn.commit()
+
+    target_dir, _ = _run(store, tmp_path)
+
+    target = {
+        row["Email"]: row["In_Group"]
+        for row in _read(target_dir / "group_target.csv")
+    }
+    assert target["two@gmail.com"] == "yes"
+    assert target["two@example.com"] == "invited"

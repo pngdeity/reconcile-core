@@ -2,9 +2,19 @@
 
 Target addresses = every email on an entity in the ``illini-drumline-alumni``
 segment, deduped by Gmail-normalized key, plus any address recorded as
-``additional_address_confirmed``. In-group status comes from the latest
-``external_status`` snapshot; routing comes from ``decision_state``
-(``invite_required``, ``blocked``, ``held``).
+``additional_address_confirmed``. Membership comes from the latest
+``external_status`` snapshot and is three-valued:
+
+``yes``
+    a member, owner or manager — an actual recipient.
+``invited``
+    an invitation is outstanding. Not a member: receives no group mail and
+    cannot post, so it is neither a recipient nor something to submit again.
+``no``
+    absent from the group — the only state the run lists submit.
+
+Routing comes from ``decision_state`` (``invite_required``, ``blocked``,
+``held``).
 
 Outputs (PII — pass explicit directories, nothing is written under the repo):
     <target-dir>/group_target.csv
@@ -29,6 +39,8 @@ from ...store import connect
 CHANNEL = "google_groups"
 ALUMNI_SEGMENT = "illini-drumline-alumni"
 CONSUMER_GOOGLE = {"gmail.com", "googlemail.com", "google.com"}
+MEMBER_STATUSES = {"member", "owner", "manager"}
+IN_GROUP_RANK = {"yes": 0, "invited": 1, "no": 2}
 FIELDS = ("Email", "In_Group", "Is_Edu", "Person", "Person_ID", "Sources")
 
 _mx_cache: dict[str, list[str]] = {}
@@ -114,7 +126,16 @@ def build(conn, held_keys: set[str]):
         raise SystemExit(f"segment not found: {ALUMNI_SEGMENT}")
 
     statuses = latest_status(conn)
-    in_group = {norm(a) for a in statuses}
+    member_keys = {
+        norm(a)
+        for a, (status, _) in statuses.items()
+        if (status or "").strip().lower() in MEMBER_STATUSES
+    }
+    invited_keys = {
+        norm(a)
+        for a, (status, _) in statuses.items()
+        if (status or "").strip().lower() == "invited"
+    }
 
     entries = defaultdict(
         lambda: {"variants": set(), "person": "", "pid": "", "sources": set()}
@@ -168,11 +189,21 @@ def build(conn, held_keys: set[str]):
     rows, held = [], []
     for key, d in entries.items():
         variants = sorted(d["variants"])
-        is_in = any(norm(v) in in_group for v in variants)
-        canonical = next((v for v in variants if norm(v) in in_group), variants[0])
+        keys = {norm(v) for v in variants}
+        if keys & member_keys:
+            state = "yes"
+        elif keys & invited_keys:
+            state = "invited"
+        else:
+            state = "no"
+        canonical = (
+            next((v for v in variants if norm(v) in member_keys), None)
+            or next((v for v in variants if norm(v) in invited_keys), None)
+            or variants[0]
+        )
         record = {
             "Email": canonical,
-            "In_Group": "yes" if is_in else "no",
+            "In_Group": state,
             "Is_Edu": "yes" if canonical.lower().endswith(".edu") else "no",
             "Person": d["person"],
             "Person_ID": d["pid"],
@@ -184,7 +215,11 @@ def build(conn, held_keys: set[str]):
             rows.append(record)
 
     rows.sort(
-        key=lambda r: (r["In_Group"] == "yes", r["Is_Edu"] == "yes", r["Email"].lower())
+        key=lambda r: (
+            IN_GROUP_RANK.get(r["In_Group"], 3),
+            r["Is_Edu"] == "yes",
+            r["Email"].lower(),
+        )
     )
     held.sort(key=lambda r: r["Email"].lower())
     return rows, held
@@ -200,13 +235,15 @@ def write_target(target_dir: Path, rows, held) -> None:
             writer.writerows(records)
 
     remaining = [r for r in rows if r["In_Group"] == "no"]
+    members = sum(1 for r in rows if r["In_Group"] == "yes")
+    invited = sum(1 for r in rows if r["In_Group"] == "invited")
     w(target_dir / "group_target.csv", rows)
     w(target_dir / "group_remaining.csv", remaining)
     nonedu = sum(1 for r in remaining if r["Is_Edu"] == "no")
     edu = sum(1 for r in remaining if r["Is_Edu"] == "yes")
     print(
         f"Target addresses: {len(rows)}  "
-        f"(in group: {sum(1 for r in rows if r['In_Group'] == 'yes')})"
+        f"(members: {members}, invited: {invited}, never contacted: {len(remaining)})"
     )
     print(
         f"Remaining to add: {len(remaining)}  -> {nonedu} non-.edu, "
@@ -275,7 +312,13 @@ def build_group_lists(db_path=None, target_dir=None, run_dir=None) -> dict:
         write_target(Path(target_dir), rows, held)
         remaining = [r for r in rows if r["In_Group"] == "no"]
         write_run_lists(Path(run_dir), conn, remaining)
-        return {"target": len(rows), "remaining": len(remaining), "held": len(held)}
+        return {
+            "target": len(rows),
+            "members": sum(1 for r in rows if r["In_Group"] == "yes"),
+            "invited": sum(1 for r in rows if r["In_Group"] == "invited"),
+            "remaining": len(remaining),
+            "held": len(held),
+        }
     finally:
         conn.close()
 
