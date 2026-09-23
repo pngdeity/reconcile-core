@@ -4,7 +4,12 @@ import csv
 
 import pytest
 
-from reconcile_core.profile.drumline.affiliations import BANDS, backfill, parse_cell
+from reconcile_core.profile.drumline.affiliations import (
+    BANDS,
+    backfill,
+    parse_cell,
+    retire_notes,
+)
 from reconcile_core.profile.drumline.migrate import apply_profile_migrations
 from reconcile_core.store import (
     add_external_ref,
@@ -155,6 +160,41 @@ def test_backfill_is_idempotent(env):
         conn.execute("SELECT count(*) FROM unresolved_identities").fetchone()[0] == 2
     )
     conn.close()
+
+
+def test_retire_notes_verifies_before_stripping(env):
+    """Prose is retired only where the store's affiliations match it."""
+    db, grid = env
+    backfill(db_path=db, grid=grid)
+    conn = connect(db)
+    tina = conn.execute(
+        "SELECT id FROM entities WHERE display_name='Tina Tester'"
+    ).fetchone()[0]
+    steve = conn.execute(
+        "SELECT id FROM entities WHERE display_name='Steve Theis'"
+    ).fetchone()[0]
+    # two appended roster segments, both matching the store
+    conn.execute(
+        "UPDATE entities SET notes=? WHERE id=?",
+        ("IDL roster: Snare; 2022-2022; IDL roster: Snare; 2023-2023", tina),
+    )
+    # a note claiming seasons the store does not have
+    conn.execute(
+        "UPDATE entities SET notes=? WHERE id=?",
+        ("IDL roster: Snare; 2019-2023", steve),
+    )
+    conn.commit()
+    conn.close()
+
+    result = retire_notes(db_path=db, dry_run=False)
+    conn = connect(db)
+    assert conn.execute("SELECT notes FROM entities WHERE id=?", (tina,)).fetchone()[0] == ""
+    assert "IDL roster" in (
+        conn.execute("SELECT notes FROM entities WHERE id=?", (steve,)).fetchone()[0]
+    )
+    conn.close()
+    assert result["stats"]["retired"] == 1
+    assert result["stats"]["mismatches"] == 1
 
 
 def test_rejected_match_is_queued_not_attached(env):

@@ -403,15 +403,181 @@ def backfill(db_path=None, grid=None, dry_run: bool = False) -> dict:
     }
 
 
+NOTE_RE = re.compile(
+    r"IDL roster:\s*(?P<sections>[^;]+);\s*(?P<years>[^;]+)(?:;\s*(?P<rest>.*))?$",
+    re.S,
+)
+YEAR_RE = re.compile(r"(\d{4})\s*(?:[-\u2013]\s*(\d{4}))?")
+NOTE_SECTIONS = {
+    "snare": "snares",
+    "tenors": "tenors",
+    "basses": "basses",
+    "cymbals": "cymbals",
+    "keyboard": "glockenspiels",
+    "timpani": "timpani",
+}
+
+
+def parse_note(notes: str) -> dict | None:
+    """Read an ``IDL roster: <sections>; <years>`` note into its parts."""
+    match = NOTE_RE.search(notes or "")
+    if not match:
+        return None
+    sections: set[str] = set()
+    role = None
+    for token in re.split(r"[/,]", match.group("sections")):
+        label = token.strip().lower()
+        if label == "staff":
+            role = "staff"
+        elif label in NOTE_SECTIONS:
+            sections.add(NOTE_SECTIONS[label])
+        elif label:
+            sections.add(label)
+    years: set[int] = set()
+    for start, end in YEAR_RE.findall(match.group("years")):
+        years.update(range(int(start), int(end) + 1) if end else {int(start)})
+    return {"sections": sections, "role": role, "years": years,
+            "rest": (match.group("rest") or "").strip()}
+
+
+def retire_notes(db_path=None, dry_run: bool = True) -> dict:
+    """Strip the roster prose from notes, but only where it now matches.
+
+    A note is retired only when its sections and seasons agree exactly with the
+    affiliations backfilled from the same sheet; anything else is reported and
+    left alone, so the prose cannot outlive the claim it contradicts.
+    """
+    conn = store.connect(db_path)
+    stats: Counter = Counter()
+    mismatches: list[tuple] = []
+    try:
+        with conn:
+            row = conn.execute(
+                "SELECT id FROM sources WHERE name=?", (SOURCE_NAME,)
+            ).fetchone()
+            source_id = row[0] if row else None
+            entities = conn.execute(
+                "SELECT id, display_name, notes FROM entities WHERE notes LIKE ?",
+                ("%IDL roster:%",),
+            ).fetchall()
+            unresolved_names = {
+                _normalize_name(row[0].split(" [")[0])
+                for row in conn.execute(
+                    "SELECT display_name FROM unresolved_identities WHERE"
+                    " platform='idl-roster-cell'"
+                )
+                if row[0]
+            }
+            for entity_id, display_name, notes in entities:
+                parsed = parse_note(notes)
+                if parsed is None:
+                    mismatches.append((entity_id, display_name, notes, "unparsed"))
+                    continue
+                # A note can carry more than one roster segment (two import runs
+                # appended to some people); fold them into one claim.
+                while parsed["rest"]:
+                    nxt = parse_note(parsed["rest"])
+                    if nxt is None:
+                        break
+                    parsed["sections"] |= nxt["sections"]
+                    parsed["years"] |= nxt["years"]
+                    parsed["role"] = parsed["role"] or nxt["role"]
+                    parsed["rest"] = nxt["rest"]
+                if source_id is None:
+                    mismatches.append((entity_id, display_name, notes, "no source"))
+                    continue
+                affiliations = conn.execute(
+                    "SELECT DISTINCT role_key, season_year, section_key FROM"
+                    " affiliations WHERE entity_id=? AND source_id=?",
+                    (entity_id, source_id),
+                ).fetchall()
+                years = {r[1] for r in affiliations}
+                sections = {r[2] for r in affiliations if r[2]}
+                roles = {r[0] for r in affiliations}
+                # The note may be the narrower side of a fold, or a span summary
+                # of the same seasons; either way the store must dominate it.
+                subset = parsed["years"] <= years
+                span_summary = (
+                    bool(parsed["years"])
+                    and bool(years)
+                    and years <= parsed["years"]
+                    and min(parsed["years"]) == min(years)
+                    and max(parsed["years"]) == max(years)
+                )
+                if (
+                    _normalize_name(display_name or "") in unresolved_names
+                ):
+                    mismatches.append(
+                        (entity_id, display_name, notes, "has unresolved roster cells")
+                    )
+                    continue
+                if (
+                    not parsed["sections"] <= sections
+                    or not (subset or span_summary)
+                    or (parsed["role"] and parsed["role"] not in roles)
+                ):
+                    mismatches.append(
+                        (
+                            entity_id,
+                            display_name,
+                            notes,
+                            f"note {sorted(parsed['years'])}/{sorted(parsed['sections'])}"
+                            f" vs store {sorted(years)}/{sorted(sections)}",
+                        )
+                    )
+                    continue
+                if not dry_run:
+                    conn.execute(
+                        "UPDATE entities SET notes=?, updated_at=datetime('now')"
+                        " WHERE id=?",
+                        (parsed["rest"] or "", entity_id),
+                    )
+                stats["retired_kept_text" if parsed["rest"] else "retired"] += 1
+            if not dry_run and stats["retired"] + stats["retired_kept_text"]:
+                conn.execute(
+                    "INSERT INTO audit_log (resource_name, action, delta) VALUES"
+                    " (?,?,?)",
+                    (
+                        "entities.notes",
+                        "RETIRE_ROSTER_PROSE",
+                        f"retired {stats['retired']} notes (kept text on"
+                        f" {stats['retired_kept_text']}); mismatches"
+                        f" {len(mismatches)}",
+                    ),
+                )
+    finally:
+        conn.close()
+    stats["mismatches"] = len(mismatches)
+    return {"stats": dict(stats), "mismatches": mismatches[:25]}
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(
         description="Backfill affiliations from the beatrack roster grid"
     )
-    parser.add_argument("--grid", required=True, help="path to the roster grid CSV")
+    parser.add_argument("--grid", help="path to the roster grid CSV")
     parser.add_argument("--db", default=None)
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument(
+        "--retire-notes",
+        action="store_true",
+        help="strip the IDL roster prose now that affiliations carry it",
+    )
     args = parser.parse_args(argv)
 
+    if args.retire_notes:
+        result = retire_notes(db_path=args.db, dry_run=args.dry_run)
+        print("retire roster prose" + (" (dry run)" if args.dry_run else ""))
+        for key, value in sorted(result["stats"].items()):
+            print(f"  {key:20s} {value}")
+        if result["mismatches"]:
+            print("  still disagreeing with the store (left in place):")
+            for entity_id, display, notes, why in result["mismatches"]:
+                print(f"    {entity_id} {display!r}: {why}")
+        return 0
+
+    if not args.grid:
+        parser.error("--grid is required unless --retire-notes is given")
     result = backfill(db_path=args.db, grid=args.grid, dry_run=args.dry_run)
     print("affiliations backfill" + (" (dry run)" if args.dry_run else ""))
     for key, value in sorted(result["stats"].items()):
