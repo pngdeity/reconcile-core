@@ -142,6 +142,14 @@ Two consequences already reflected above: geometry is not always a grid (hence
 `basses` (user ruling 2026-09-23), so it is captured as a named slot within that
 section and never as its own section or role.
 
+**TODO (accepted as inaccurate, 2026-09-23).** Two slot conventions coexist: the
+beatrack grid's `slot` is a band-relative *ordinal* (1, 2, 3 …) while the audition
+documents number bass positions from `0` and name the seventh drum `Kicker`. Each
+source is stored verbatim, which is faithful but not one scheme; a later pass
+should reconcile them (for example an ordinal column plus a source-order column)
+whenever something actually needs to compare slots across sources. Deliberately
+not urgent.
+
 **Source strength (user ruling 2026-09-23).** The official Instagram feed
 (`@illinidrumline`) counts as **sufficient membership evidence**, at the user's
 discretion — it is the organisation's own account, not an anonymous feed. The

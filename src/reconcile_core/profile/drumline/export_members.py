@@ -2,8 +2,10 @@
 
 Ports illini ``working/export_drumline_members.py``. One row per person in the
 ``illini-drumline-alumni`` segment, with all known emails, phone, verification,
-Tracker/Contacts IDs, dump presence, and outreach status. Generated — edit the
-store and re-run; do not hand-edit.
+Tracker/Contacts IDs, dump presence, outreach status, and the season-level
+membership summary (first/last season, season count, sections, role, nickname —
+keys joined with ``;``, section labels as the store spells them). Generated — edit
+the store and re-run; do not hand-edit.
 
 Usage:
     uv run python -m reconcile_core.profile.drumline.export_members \
@@ -39,6 +41,12 @@ HEADER = [
     "Tracker_Notes",
     "Needs_First_Outreach",
     "Review_Status",
+    "Season_First",
+    "Season_Last",
+    "Seasons_Count",
+    "Sections",
+    "Role",
+    "Nickname",
 ]
 
 
@@ -73,10 +81,14 @@ def build_rows(conn) -> list[dict]:
         values = refs(entity_id, source)
         return values[0] if values else None
 
+    section_labels = {
+        row["key"]: row["label"] for row in conn.execute("SELECT key, label FROM sections")
+    }
+
     rows: list[dict] = []
     for entity_id in segment_entities:
         entity = conn.execute(
-            "SELECT first_name, last_name, display_name FROM entities WHERE id=?",
+            "SELECT first_name, last_name, display_name, nickname FROM entities WHERE id=?",
             (entity_id,),
         ).fetchone()
 
@@ -99,6 +111,18 @@ def build_rows(conn) -> list[dict]:
         outreach = conn.execute(
             "SELECT * FROM drumline_outreach WHERE entity_id=?", (entity_id,)
         ).fetchone()
+
+        # Season-level membership, from every source (roster grid + audition docs).
+        seasons = conn.execute(
+            "SELECT min(season_year) AS first_year, max(season_year) AS last_year,"
+            " count(DISTINCT season_year) AS season_count,"
+            " group_concat(DISTINCT section_key) AS section_keys,"
+            " group_concat(DISTINCT role_key) AS role_keys"
+            " FROM affiliations WHERE entity_id=?",
+            (entity_id,),
+        ).fetchone()
+        section_keys = sorted(k for k in (seasons["section_keys"] or "").split(",") if k)
+        role_keys = sorted(k for k in (seasons["role_keys"] or "").split(",") if k)
 
         person_id = ref_one(entity_id, "master_person_id") or f"P9{entity_id:04d}"
         tracker_ids = sorted(refs(entity_id, "tracker_id"), key=as_int)
@@ -134,6 +158,12 @@ def build_rows(conn) -> list[dict]:
                 if outreach
                 else "",
                 "Review_Status": outreach["review_status"] if outreach else "",
+                "Season_First": seasons["first_year"] or "",
+                "Season_Last": seasons["last_year"] or "",
+                "Seasons_Count": seasons["season_count"] or "",
+                "Sections": ";".join(section_labels.get(k, k) for k in section_keys),
+                "Role": ";".join(role_keys),
+                "Nickname": entity["nickname"] or "",
             }
         )
 

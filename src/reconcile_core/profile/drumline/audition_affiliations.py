@@ -216,6 +216,9 @@ def backfill(db_path=None, text=None, dry_run: bool = False, create_missing: boo
         conn.close()
     stats["created"] = len(created)
     result = dict(stats)
+    for key in ("matched", "unresolved", "placeholder", "affiliations", "duplicate",
+                "would_create"):
+        result.setdefault(key, 0)
     result["created_names"] = created
     # Invariant: every person line lands somewhere — a row, a duplicate, or a queue.
     result["resolved_lines"] = (

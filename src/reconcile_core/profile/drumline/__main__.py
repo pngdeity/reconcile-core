@@ -11,6 +11,7 @@ Commands:
     name-resolutions   apply versioned manual name resolutions
     import-master      seed the outreach overlay from the legacy master CSV
     export-members     generate the person-level member CSV
+    audition-affiliations load an audition results document into affiliations
     needs-live-email   derive the needs-live-email backlog from the store
     import-group-status import a Google Groups export into external_status
     group-lists        build the Google Groups target and run lists
@@ -31,6 +32,7 @@ COMMANDS = (
     "name-resolutions",
     "import-master",
     "export-members",
+    "audition-affiliations",
     "needs-live-email",
     "import-group-status",
     "group-lists",
@@ -49,6 +51,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     from . import (
+        audition_affiliations,
         audition_members,
         export_members,
         group_lists,
@@ -69,6 +72,7 @@ def main(argv: list[str] | None = None) -> int:
         "name-resolutions": name_resolutions.main,
         "import-master": import_master.main,
         "export-members": export_members.main,
+        "audition-affiliations": audition_affiliations.main,
         "needs-live-email": needs_live_email.main,
         "import-group-status": import_group_status.main,
         "group-lists": group_lists.main,
