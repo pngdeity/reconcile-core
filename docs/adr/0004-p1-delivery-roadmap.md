@@ -72,7 +72,19 @@ and retains the existing `D` numbers for discovery/hygiene.
 
 - **Removed:** D2 (retired per ADR-0003), D9 (folded into C7).
 - **Merged:** D5+D11 → reference-consumer doc; D3+D4 → bootstrap/seed.
-- **Out of scope:** B7 (Google Groups provisioning per ADR-0001).
+- **Out of scope:** B7 (Google Groups provisioning per ADR-0001) — executed
+  illini-side on 2026-09-23 (421 group entries, 0 remaining).
+
+## Postscript (2026-09-23)
+
+The decision above stands; status of its first actions has moved on:
+
+- **C1** landed: `src/reconcile_core/store/backup.py` + `tests/test_backup.py`.
+- **C4** landed: synthetic no-PII corpus + golden harness (`tests/test_corpus.py`).
+- **D6** CI: `.github/workflows/` runs `ruff` + `pytest`.
+- **B7** is complete illini-side (see above); it no longer blocks anything.
+
+Check `docs/AGENT-ONBOARDING.md` §7 for the live backlog rather than this list.
 
 ## Dependency graph
 

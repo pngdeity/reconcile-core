@@ -107,6 +107,10 @@ ILL=~/repos/pngdeity/active/illini-drumline-contacts-alumni
 cp "$ILL"/working/{manual_entity_merges,manual_name_resolutions,manual_address_map,group_invite_required,group_blocked,group_hold}.json var/drumline/
 ```
 
+`audition_members.json` (audition-results names) and `idl_roster.json` (beatrack
+IDL historical roster) must also be present in `var/drumline/`; they are produced
+by the illini-side tooling and are **not** in the copy set above.
+
 Without these, profile commands succeed but produce empty/incorrect output — add
 the `config --check` guard (gap D4).
 
@@ -152,7 +156,10 @@ Store schema (entities · external_refs · contact_points · addresses · aliase
 segments · segment_members · decision_state · external_status · audit_log ·
 unresolved_identities) is defined in
 `src/reconcile_core/store/migrations/0001_init.sql`; the drumline overlay is in
-`src/reconcile_core/profile/drumline/migrations/0002_drumline_outreach.sql`.
+`src/reconcile_core/profile/drumline/migrations/0002_drumline_outreach.sql`; and
+`0003_repair_schema.sql` recreates `audit_log`/`unresolved_identities` for stores
+imported by `import_db` (which re-stamps `schema_version` without running
+`0001_init.sql`).
 
 ---
 
@@ -172,7 +179,8 @@ unresolved_identities) is defined in
    Rachel Misurac entity merge, and verification overrides live in
    `var/drumline/*.json` and the store. Preserve them.
 6. **Profile refresh order:** migrations → import-drumline → audition-members →
-   **import-master** → name-resolutions → export-members (§1).
+   idl-roster → **import-master** → name-resolutions → export-members →
+   needs-live-email (§1).
 7. **Migration rules:** the runner owns `schema_version`; migrations must not
    contain `BEGIN`/`COMMIT`; profile migrations use `CREATE TABLE IF NOT EXISTS`
    because imported legacy DBs carry unowned tables; profile migration dirs are
@@ -217,8 +225,10 @@ Settled by `docs/adr/` (ADR-0001–0004):
   store is XDG-default with `--db` (ADR-0002); core stays stdlib-only
   (ADR-0002); the name stays `reconcile-core` (ADR-0002); the drumline is an
   in-repo reference consumer (ADR-0001); illini is not archived.
-- **Out of scope:** B7 (Google Groups adds, 181 remaining) — the drumline is a
-  reference consumer, not the roadmap (ADR-0001).
+- **Illini-side Google Groups:** the add/invite campaign is **complete** (Sep 23,
+  2026) — 421 group entries, 0 remaining in the run lists, 4 addresses silently
+  refused by Google plus 1 blocked (illini `working/group_blocked.json`). Still
+  outside reconcile-core's roadmap (ADR-0001); live details in the illini `TODO.md`.
 - **Illini-side:** the `working/*.json` maps cleanup (recorded in the illini TODO).
 
 ---
@@ -259,7 +269,7 @@ learn the invariants without leaving this repo (D5/D7/D8/D10/D11).
 - `CONTRIBUTING.md` — how to regenerate agent context.
 - `docs/CONSOLIDATION-PLAN.md` — design, phases, decisions, phase log.
 - `docs/adr/` — architecture decision records: authoritative direction (P1 focus, store/dependency boundaries, Google-as-projection) and the delivery roadmap.
-- `docs/RECONCILE-CORE-HANDOFF.md` — detailed technical spec.
+- `docs/RECONCILE-CORE-HANDOFF.md` — original design spec; partially superseded (the ADRs win, per its banner).
 - `docs/ADAPTER_RESEARCH.md` — platform roadmap (Facebook, GitHub, X.com, Telegram).
 - `docs/SETUP.md` — prerequisites (`uv`, `gws`, Python 3.14).
 - `src/reconcile_core/profile/drumline/README.md` — profile usage and PII conventions.

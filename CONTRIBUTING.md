@@ -21,10 +21,9 @@ Never edit `pyproject.toml` or `uv.lock` manually. Use `uv add` / `uv add --dev`
 ## Adding a Platform Adapter
 
 1. Implement `BaseAdapter.extract(file_path) -> Generator[StandardContact]` in `adapters/<name>.py`
-2. Import the class in `adapters/__init__.py` and add to `__all__`
-3. Register in `ADAPTER_CLASSES` in `main.py` (use the try/except ImportError pattern)
-4. Add `--platform` choice to argparse in `main.py`
-5. Add sample data in `test_data/` and tests in `tests/test_adapters.py`
+2. Import the class in `adapters/__init__.py` and add it to `ADAPTER_CLASSES` + `__all__`
+3. Add the `--platform` choice to the unified CLI (`src/reconcile_core/cli.py`)
+4. Add sample data in `test_data/` and tests in `tests/test_adapters.py`
 
 See [docs/ADAPTER_RESEARCH.md](docs/ADAPTER_RESEARCH.md) for roadmaps on Facebook, GitHub, X.com, and Telegram.
 
