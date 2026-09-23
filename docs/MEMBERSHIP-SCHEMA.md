@@ -169,7 +169,8 @@ who do appear in the final results keep their confirmed status. The same intake
 **missed 16 confirmed members** (Evanoff, Zhang, Campbell, Mathew, Bertrand,
 Jerger, Harshbarger, Vanderkarr, H. Lester, Z. Evans, Anderson, L. Brown, Coyle,
 McClendon, E. Nelson, Boone), and exactly one final-results person has no entity
-at all (**Zane Evans**). Alumni segment: 713 → **697** after the removal.
+at all (**Zane Evans**). Alumni segment: 713 → **697** after the removal, then
+**698** once the 2025 results ingest created Zane Evans (entity 1915).
 
 **Cycle of the audition PDF (resolved 2026-09-23).** It reads `SUNDAY APRIL 26`;
 2025-04-26 was a Saturday and **2026-04-26 is a Sunday**, so by the dating rule
@@ -205,9 +206,14 @@ finally exclude those candidates, and would be the first affiliation newer than
 
 Steps 1–7 are done for the beatrack source (1,426 affiliations + 4 duplicate
 cells + 150 unresolved + 7 placeholders = the 1,587 historical person-year
-count; retry is idempotent; 0 rejected entities hold affiliations). Step 8 and
-the audition backfill (38 affiliations at `season_year=2025`, plus creating Zane
-Evans) are pending.
+count; retry is idempotent; 0 rejected entities hold affiliations). Step 8 is
+done (`export_members` now emits `Season_First`, `Season_Last`, `Seasons_Count`,
+`Sections`, `Role`, `Nickname`; 24 columns). The audition backfill is done too —
+38 affiliations at `season_year=2025` from source 8, Zane Evans created — via
+`audition-affiliations`, which reuses this module's name resolution rather than
+the grid walker. Still outstanding: the inbox dumps are not versioned, the 157
+unresolved grid cells and 17 annotation-review rows await review, and
+`export public-roster` is not written.
 
 ## Open item
 
