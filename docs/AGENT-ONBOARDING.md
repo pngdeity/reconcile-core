@@ -226,8 +226,10 @@ Settled by `docs/adr/` (ADR-0001–0004):
   (ADR-0002); the name stays `reconcile-core` (ADR-0002); the drumline is an
   in-repo reference consumer (ADR-0001); illini is not archived.
 - **Illini-side Google Groups:** the add/invite campaign is **complete** (Sep 23,
-  2026) — 421 group entries, 0 remaining in the run lists, 4 addresses silently
-  refused by Google plus 1 blocked (illini `working/group_blocked.json`). Still
+  2026) — 421 group entries, 0 remaining in the run lists, 3 addresses silently
+  refused by Google plus 1 invite accepted under a different address
+  (`gmkwain@aol.com` -> `gmkwain1@gmail.com`, now stored) and 1 blocked (illini
+  `working/group_blocked.json`). Still
   outside reconcile-core's roadmap (ADR-0001); live details in the illini `TODO.md`.
 - **Illini-side:** the `working/*.json` maps cleanup (recorded in the illini TODO).
 
