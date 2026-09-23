@@ -146,6 +146,27 @@ def test_merge_is_lossless_and_dedupes(conn):
     assert _one(conn, "SELECT COUNT(*) FROM audit_log WHERE action = 'MERGE'") == 1
 
 
+def test_merge_renumbers_colliding_positions(conn):
+    src = _person(conn, "Ada Lovelace")
+    dst = _person(conn, "Ada Lovelace")
+    add_contact_point(conn, src, "email", "ada.alt@example.com", position=1)
+    add_contact_point(conn, dst, "email", "ada@example.com", position=1)
+
+    stats = merge_entities(conn, src, dst)
+    conn.commit()
+
+    rows = conn.execute(
+        "SELECT value, position FROM contact_points"
+        " WHERE entity_id = ? AND kind = 'email' ORDER BY position",
+        (dst,),
+    ).fetchall()
+    assert [(r["value"], r["position"]) for r in rows] == [
+        ("ada@example.com", 1),
+        ("ada.alt@example.com", 2),
+    ]
+    assert stats["points_renumbered"] == 1
+
+
 def test_merge_adopts_name_when_target_is_nameless(conn):
     src = _person(conn, "Ada Lovelace")
     dst = _person(conn, "")

@@ -227,6 +227,49 @@ def _dedupe_contact_points(conn: sqlite3.Connection, entity_id: int) -> int:
     return removed
 
 
+def _renumber_positions(
+    conn: sqlite3.Connection, entity_id: int, preferred: list[int]
+) -> int:
+    """Give every contact-point kind a unique ``1..n`` position sequence.
+
+    Points keep their relative order, but ids in ``preferred`` (the target's
+    own points, captured before a fold) are placed first so a merge never
+    displaces the surviving entity's existing slots. Without this a folded
+    point can share a ``position`` with a target point, and the Google
+    Contacts exporter — which keys slots by position — silently drops one.
+    """
+    rank = {point_id: index for index, point_id in enumerate(preferred)}
+    changed = 0
+    kinds = [
+        row["kind"]
+        for row in conn.execute(
+            "SELECT DISTINCT kind FROM contact_points WHERE entity_id = ?",
+            (entity_id,),
+        )
+    ]
+    for kind in kinds:
+        rows = conn.execute(
+            "SELECT id, position FROM contact_points WHERE entity_id = ? AND kind = ?",
+            (entity_id, kind),
+        ).fetchall()
+        ordered = sorted(
+            rows,
+            key=lambda row: (
+                rank.get(row["id"], len(rank)),
+                row["position"] if row["position"] is not None else 0,
+                row["id"],
+            ),
+        )
+        for position, row in enumerate(ordered, start=1):
+            if row["position"] != position:
+                conn.execute(
+                    "UPDATE contact_points SET position = ? WHERE id = ?",
+                    (position, row["id"]),
+                )
+                changed += 1
+    return changed
+
+
 def merge_entities(
     conn: sqlite3.Connection,
     source_id: int,
@@ -240,8 +283,9 @@ def merge_entities(
     Moves every child row (refs, contact points and their addresses, aliases,
     segment membership, decision state, external status), preserves the
     source's display name as an alias when it differs, drops only exact
-    normalized duplicates that carry no address/decision state, then deletes
-    the source entity.
+    normalized duplicates that carry no address/decision state, renumbers
+    positions per kind so no two points share a slot, then deletes the source
+    entity.
     """
     if source_id == target_id:
         raise ValueError("cannot merge an entity into itself")
@@ -251,6 +295,13 @@ def merge_entities(
         raise ValueError(f"no entity with id {source_id}")
     if dst is None:
         raise ValueError(f"no entity with id {target_id}")
+
+    target_points = [
+        row["id"]
+        for row in conn.execute(
+            "SELECT id FROM contact_points WHERE entity_id = ?", (target_id,)
+        )
+    ]
 
     stats = {
         "refs": conn.execute(
@@ -293,6 +344,7 @@ def merge_entities(
             )
 
     stats["duplicate_points"] = _dedupe_contact_points(conn, target_id)
+    stats["points_renumbered"] = _renumber_positions(conn, target_id, target_points)
     conn.execute("DELETE FROM entities WHERE id = ?", (source_id,))
     conn.execute(
         "INSERT INTO audit_log (resource_name, action, delta) VALUES (?, ?, ?)",
