@@ -68,9 +68,21 @@ def test_import_does_not_shadow_future_migrations(tmp_path):
 
     import_legacy_db(src, dst)
 
-    # only the consolidated baseline is applied, so the migrator is a no-op now
-    # and any future migration (e.g. a drumline_outreach migration) still applies.
-    assert apply_migrations(dst) == BASELINE_VERSION
+    # only the consolidated baseline is applied, so later core migrations still
+    # apply; the repair migration restores baseline tables the legacy store lacked.
+    assert apply_migrations(dst) > BASELINE_VERSION
+
+    conn = sqlite3.connect(str(dst))
+    try:
+        tables = {
+            row[0]
+            for row in conn.execute(
+                "SELECT name FROM sqlite_master WHERE type = 'table'"
+            )
+        }
+    finally:
+        conn.close()
+    assert {"audit_log", "unresolved_identities"} <= tables
 
 
 def test_import_requires_force_to_overwrite(tmp_path):

@@ -36,7 +36,7 @@ def test_snapshot_and_verify(tmp_path):
     assert path == out and out.exists()
     info = verify(out)
     assert info["integrity"] == "ok"
-    assert info["schema_version"] == 1
+    assert info["schema_version"] == verify(db)["schema_version"]
     assert info["counts"]["entities"] == 1
     assert info["counts"]["contact_points"] == 1
     assert info["counts"] == verify(db)["counts"]

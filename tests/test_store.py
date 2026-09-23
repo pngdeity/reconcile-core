@@ -1,6 +1,5 @@
 """Tests for the canonical contacts store (schema, migrations, helpers)."""
 
-
 import pytest
 
 from reconcile_core.store import migrate, store
@@ -20,9 +19,10 @@ def conn(db_path):
 
 
 def test_migrate_applies_and_is_idempotent(db_path):
-    assert migrate.apply_migrations(db_path) == 1
+    first = migrate.apply_migrations(db_path)
+    assert first >= 1
     # Second run applies nothing and keeps the version.
-    assert migrate.apply_migrations(db_path) == 1
+    assert migrate.apply_migrations(db_path) == first
 
 
 def test_status_reports_applied(db_path):

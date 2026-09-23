@@ -66,7 +66,7 @@ def make_config(tmp_path: Path, **files) -> Path:
 @pytest.fixture
 def db(tmp_path):
     path = tmp_path / "contacts.db"
-    assert apply_profile_migrations(path) == 2
+    assert apply_profile_migrations(path) >= 2
     return path
 
 

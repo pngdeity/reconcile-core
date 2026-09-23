@@ -45,9 +45,16 @@ def test_migrate_status_and_profile(tmp_path, capsys):
     conn = connect(db)
     try:
         version = _count(conn, "SELECT MAX(version) FROM schema_version")
+        tables = {
+            row[0]
+            for row in conn.execute(
+                "SELECT name FROM sqlite_master WHERE type = 'table'"
+            )
+        }
     finally:
         conn.close()
-    assert version == 2
+    assert version >= 2
+    assert "drumline_outreach" in tables
 
 
 def test_migrate_status_reports_without_applying(tmp_path, capsys):
@@ -78,7 +85,9 @@ def test_migrate_status_lists_profile_migrations(tmp_path, capsys):
     out = capsys.readouterr().out
     assert "drumline_outreach" in out
     assert "applied" in out
-    assert "Store schema at version 2" in out
+    marker = "Store schema at version "
+    assert marker in out
+    assert int(out.split(marker, 1)[1].split()[0]) >= 2
 
 
 def test_ingest_creates_entity(tmp_path, fake_adapter):
