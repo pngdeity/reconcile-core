@@ -3,8 +3,7 @@
 Ports illini ``working/apply_name_resolutions.py``. Reads the profile config
 (default ``var/drumline/manual_name_resolutions.json``) and, per entry:
 resolves the entity via ``external_refs``, applies ``set`` overrides, adds
-aliases, and syncs the ``tracker_verification`` alias + ``drumline_outreach``
-verification. Idempotent.
+aliases, and sets ``drumline_outreach`` verification. Idempotent.
 
 Usage:
     uv run python -m reconcile_core.profile.drumline.name_resolutions \
@@ -70,18 +69,13 @@ def _apply(conn, entries) -> dict:
 
         outreach = entry.get("outreach") or {}
         if outreach.get("verification"):
+            # drumline_outreach is the single home of the verification status; the
+            # tracker_verification alias carrier was retired 2026-09-23.
             conn.execute(
-                "UPDATE drumline_outreach SET verification = ? WHERE entity_id = ?",
+                "UPDATE drumline_outreach SET verification = ?,"
+                " verification_source = 'manual_name_resolution',"
+                " updated_at = datetime('now') WHERE entity_id = ?",
                 (outreach["verification"], entity_id),
-            )
-            conn.execute(
-                "DELETE FROM aliases WHERE entity_id = ? AND alias_type = 'tracker_verification'",
-                (entity_id,),
-            )
-            conn.execute(
-                "INSERT OR IGNORE INTO aliases (entity_id, alias_type, alias_value, source) "
-                "VALUES (?, 'tracker_verification', ?, 'manual_name_resolution')",
-                (entity_id, outreach["verification"]),
             )
 
         applied += 1

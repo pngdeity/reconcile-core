@@ -140,8 +140,16 @@ def test_import_drumline_segment_and_decision_state(tmp_path, db):
                 (entity_id,),
             )
         }
-        assert ("tracker_verification", "Verified") in aliases
-        assert ("tracker_notes", "note") in aliases
+        assert not {t for t, _ in aliases} & {"tracker_verification", "tracker_notes"}
+        outreach = conn.execute(
+            "SELECT verification, tracker_notes, verification_source, notes_source"
+            " FROM drumline_outreach WHERE entity_id=?",
+            (entity_id,),
+        ).fetchone()
+        assert outreach["verification"] == "Verified"
+        assert outreach["tracker_notes"] == "note"
+        assert outreach["verification_source"] == "drumline-import"
+        assert outreach["notes_source"] == "drumline-import"
     finally:
         conn.close()
 

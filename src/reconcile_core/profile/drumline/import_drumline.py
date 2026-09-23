@@ -171,17 +171,31 @@ def import_tracker(conn, tracker_path: Path | str):
                 conn.execute(
                     f"UPDATE entities SET {field} = ? WHERE id = ?", (value, entity_id)
                 )
+        # The Tracker's Verification and Notes belong in drumline_outreach, their
+        # single home: the old tracker_verification / tracker_notes alias carriers
+        # were retired 2026-09-23. An existing non-empty value wins, because later
+        # passes (idl-roster, dedup, name resolutions) hold the fresher truth.
         if clean(row.get("Verification")):
-            store.add_alias(
-                conn,
-                entity_id,
-                "tracker_verification",
-                row["Verification"].strip(),
-                source=SOURCE,
+            conn.execute(
+                "INSERT INTO drumline_outreach (entity_id, verification,"
+                " verification_source) VALUES (?, ?, ?)"
+                " ON CONFLICT(entity_id) DO UPDATE SET"
+                " verification = excluded.verification,"
+                " verification_source = excluded.verification_source,"
+                " updated_at = datetime('now')"
+                " WHERE ifnull(drumline_outreach.verification, '') = ''",
+                (entity_id, row["Verification"].strip(), SOURCE),
             )
         if clean(row.get("Notes")):
-            store.add_alias(
-                conn, entity_id, "tracker_notes", row["Notes"].strip(), source=SOURCE
+            conn.execute(
+                "INSERT INTO drumline_outreach (entity_id, tracker_notes,"
+                " notes_source) VALUES (?, ?, ?)"
+                " ON CONFLICT(entity_id) DO UPDATE SET"
+                " tracker_notes = excluded.tracker_notes,"
+                " notes_source = excluded.notes_source,"
+                " updated_at = datetime('now')"
+                " WHERE ifnull(drumline_outreach.tracker_notes, '') = ''",
+                (entity_id, row["Notes"].strip(), SOURCE),
             )
         store.add_segment_member(conn, segment, entity_id)
     return rows, created, linked
