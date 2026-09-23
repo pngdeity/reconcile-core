@@ -68,6 +68,13 @@ def import_group_status(input_path, db_path=None, observed_at=None) -> dict:
         index = email_index(conn)
         linked = 0
         by_status: dict[str, int] = {}
+        # A snapshot is the whole membership list at a moment in time, so an
+        # address that has dropped out of the export since an earlier import on
+        # the same day must not linger and inflate the counts.
+        conn.execute(
+            "DELETE FROM external_status WHERE channel = ? AND observed_at = ?",
+            (CHANNEL, day),
+        )
         for address, nickname, status, email_status in entries:
             entity_id = index.get(norm(address))
             if entity_id:

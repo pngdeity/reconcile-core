@@ -91,3 +91,28 @@ def test_import_records_unlinked_addresses(db):
     conn.close()
     assert row["entity_id"] is None
     assert row["email_status"] == "bouncing"
+
+
+def test_reimport_same_day_drops_addresses_absent_from_the_new_export(db):
+    """A snapshot is the whole list: a dropped address must not linger."""
+    path = _export(
+        db.parent,
+        [
+            ["stays@example.com", "Stays", "member", ""],
+            ["drops@example.com", "Drops", "invited", ""],
+        ],
+    )
+    import_group_status(path, db_path=db, observed_at="2026-09-23")
+
+    path = _export(db.parent, [["stays@example.com", "Stays", "member", ""]])
+    stats = import_group_status(path, db_path=db, observed_at="2026-09-23")
+
+    assert stats["snapshot"] == 1
+
+    conn = connect(db)
+    rows = conn.execute(
+        "SELECT address FROM external_status WHERE channel = ? AND observed_at = ?",
+        (CHANNEL, "2026-09-23"),
+    ).fetchall()
+    conn.close()
+    assert [row["address"] for row in rows] == ["stays@example.com"]
