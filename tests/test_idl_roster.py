@@ -88,6 +88,7 @@ def test_apply_idl_roster(env):
 
     assert result == {
         "segment_additions_applied": 1,
+        "segment_additions_skipped": 0,
         "new_members_created": 1,
         "staff_members_created": 1,
         "aliases_added": 1,
@@ -124,6 +125,28 @@ def test_apply_idl_roster(env):
         "SELECT source, ref_value FROM external_refs WHERE entity_id != ?", (existing,)
     ).fetchall()
     assert {row["ref_value"] for row in ref} == {"akira-robles", "fred-fairchild"}
+    conn.close()
+
+
+def test_rejected_entity_is_not_added(env):
+    """A manual 'rejected' decision must block the segment addition."""
+    db, config_dir, existing = env
+    conn = connect(db)
+    conn.execute(
+        "INSERT INTO decision_state (entity_id, channel, status, source, observed_at)"
+        " VALUES (?, 'idl-roster', 'rejected', 'manual_review', '2026-09-23')",
+        (existing,),
+    )
+    conn.commit()
+    conn.close()
+
+    result = apply_idl_roster(db_path=db, config=config_dir)
+
+    assert result["segment_additions_applied"] == 0
+    assert result["segment_additions_skipped"] == 1
+
+    conn = connect(db)
+    assert existing not in _segment_entities(conn, ALUMNI)
     conn.close()
 
 

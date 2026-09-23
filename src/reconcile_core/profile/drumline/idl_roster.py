@@ -79,8 +79,24 @@ def _seed_outreach(conn, entity_id: int, verification: str) -> None:
     )
 
 
-def _apply_segment_additions(conn, entries, segment_id: int, verification: str) -> int:
+def _is_rejected(conn, entity_id: int) -> bool:
+    """True when a manual review marked the roster match as a false positive."""
+    return (
+        conn.execute(
+            "SELECT 1 FROM decision_state"
+            " WHERE entity_id=? AND channel=? AND status='rejected'",
+            (entity_id, DEFAULT_SOURCE),
+        ).fetchone()
+        is not None
+    )
+
+
+def _apply_segment_additions(
+    conn, entries, segment_id: int, verification: str
+) -> tuple[int, int]:
+    """Return (applied, skipped); rejected matches are never added."""
     applied = 0
+    skipped = 0
     for entry in entries:
         entity_id = entry.get("entity_id")
         if entity_id is None:
@@ -90,10 +106,13 @@ def _apply_segment_additions(conn, entries, segment_id: int, verification: str) 
             is None
         ):
             continue
+        if _is_rejected(conn, entity_id):
+            skipped += 1
+            continue
         store.add_segment_member(conn, segment_id, entity_id)
         _seed_outreach(conn, entity_id, verification)
         applied += 1
-    return applied
+    return applied, skipped
 
 
 def _apply_new_members(
@@ -175,7 +194,7 @@ def apply_idl_roster(db_path=None, config=None) -> dict:
                 data.get("staff_segment") or DEFAULT_STAFF_SEGMENT,
                 description=STAFF_SEGMENT_DESCRIPTION,
             )
-            additions = _apply_segment_additions(
+            additions, additions_skipped = _apply_segment_additions(
                 conn, data.get("segment_additions") or [], alumni_id, verification
             )
             created = _apply_new_members(
@@ -189,6 +208,7 @@ def apply_idl_roster(db_path=None, config=None) -> dict:
         conn.close()
     return {
         "segment_additions_applied": additions,
+        "segment_additions_skipped": additions_skipped,
         "new_members_created": created,
         "staff_members_created": staff,
         "aliases_added": aliases,
@@ -206,6 +226,7 @@ def main(argv=None) -> int:
     result = apply_idl_roster(db_path=args.db, config=args.config_dir)
     print("IDL roster applied")
     print(f"  segment additions:   {result['segment_additions_applied']}")
+    print(f"  additions skipped:   {result['segment_additions_skipped']}")
     print(f"  new members:         {result['new_members_created']}")
     print(f"  staff members:       {result['staff_members_created']}")
     print(f"  aliases:             {result['aliases_added']}")
