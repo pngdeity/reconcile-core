@@ -7,6 +7,7 @@ Commands:
     migrate            apply core + drumline migrations
     import-drumline    link Tracker rows, alumni segment, decision state
     audition-members   apply audition name-fills + create new member entities
+    idl-roster         apply the IDL historical-roster membership config
     name-resolutions   apply versioned manual name resolutions
     import-master      seed the outreach overlay from the legacy master CSV
     export-members     generate the person-level member CSV
@@ -24,6 +25,7 @@ COMMANDS = (
     "migrate",
     "import-drumline",
     "audition-members",
+    "idl-roster",
     "name-resolutions",
     "import-master",
     "export-members",
@@ -45,6 +47,7 @@ def main(argv: list[str] | None = None) -> int:
     from . import (
         audition_members,
         export_members,
+        idl_roster,
         import_drumline,
         import_master,
         migrate,
@@ -56,6 +59,7 @@ def main(argv: list[str] | None = None) -> int:
         "migrate": migrate.main,
         "import-drumline": import_drumline.main,
         "audition-members": audition_members.main,
+        "idl-roster": idl_roster.main,
         "name-resolutions": name_resolutions.main,
         "import-master": import_master.main,
         "export-members": export_members.main,

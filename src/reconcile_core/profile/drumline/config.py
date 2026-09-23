@@ -24,6 +24,7 @@ MERGE_FILES = {
     "blocked": "group_blocked.json",
     "hold": "group_hold.json",
     "audition": "audition_members.json",
+    "idl_roster": "idl_roster.json",
 }
 
 
@@ -71,3 +72,7 @@ def hold(config: Path | str | None = None) -> list[dict]:
 
 def audition_members(config: Path | str | None = None) -> dict:
     return load(MERGE_FILES["audition"], config, {}) or {}
+
+
+def idl_roster(config: Path | str | None = None) -> dict:
+    return load(MERGE_FILES["idl_roster"], config, {}) or {}

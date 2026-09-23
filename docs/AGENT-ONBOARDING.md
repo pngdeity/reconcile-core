@@ -44,6 +44,7 @@ uv run python -m reconcile_core audit
 uv run python -m reconcile_core.profile.drumline migrate
 uv run python -m reconcile_core.profile.drumline import-drumline --tracker TRACKER.csv
 uv run python -m reconcile_core.profile.drumline audition-members
+uv run python -m reconcile_core.profile.drumline idl-roster
 uv run python -m reconcile_core.profile.drumline import-master   --input LEGACY-MASTER.csv
 uv run python -m reconcile_core.profile.drumline name-resolutions
 uv run python -m reconcile_core.profile.drumline export-members  --out MEMBERS.csv
@@ -117,6 +118,7 @@ P="python -m reconcile_core.profile.drumline"
 uv run $P migrate            # same overlay as `migrate --profile drumline`
 uv run $P import-drumline --tracker "$ILL/deliverables/Tracker.csv"
 uv run $P audition-members
+uv run $P idl-roster
 uv run $P import-master   --input   "$ILL/working/backups/drumline-master-v2_pre_rename_20260921.csv"
 uv run $P name-resolutions
 uv run $P export-members  --out     /tmp/drumline-members.csv

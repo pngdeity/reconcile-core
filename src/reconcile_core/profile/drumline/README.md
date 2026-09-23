@@ -21,6 +21,7 @@ Domain layer for the Illini Drumline, on top of the generic contacts store.
   and the `drumline_outreach` overlay from the legacy master CSV.
 - **`export_members`**: generates the person-level `drumline-members.csv`.
 - **`needs_live_email`**: derives the needs-live-email research backlog (members with no email or only non-live addresses) from the store.
+- **`idl_roster`**: ingests the published beatrack IDL historical roster — segment additions, new alumni (anchored by `idl-roster` refs), and staff-only entities in a separate `idl-staff` segment.
 
 ## PII
 
@@ -33,8 +34,8 @@ are read from the repo-local, git-ignored `var/drumline/` (override with
 ## Usage
 
 Refresh order matters: run `audition-members` after `import-drumline` (so the
-segment exists), and `import-master` **before** `name-resolutions` (the seed
-overwrites the outreach overlay).
+segment exists), run `idl-roster` after `audition-members`, and `import-master`
+**before** `name-resolutions` (the seed overwrites the outreach overlay).
 
 ```bash
 # core + drumline migrations
@@ -46,6 +47,9 @@ uv run python -m reconcile_core.profile.drumline import-drumline \
 
 # audition name-fills + new members (config: var/drumline/audition_members.json)
 uv run python -m reconcile_core.profile.drumline audition-members --db var/contacts.db
+
+# beatrack IDL historical roster (config: var/drumline/idl_roster.json)
+uv run python -m reconcile_core.profile.drumline idl-roster --db var/contacts.db
 
 # one-time outreach seed from the legacy master (before name-resolutions)
 uv run python -m reconcile_core.profile.drumline import-master \
@@ -63,5 +67,5 @@ uv run python -m reconcile_core.profile.drumline needs-live-email \
     --out var/group_needs_live_email.csv --db var/contacts.db
 ```
 
-`uv run pytest -q tests/test_drumline_profile.py tests/test_audition_members.py`
+`uv run pytest -q tests/test_drumline_profile.py tests/test_audition_members.py tests/test_idl_roster.py`
 covers all of the above with synthetic, no-PII fixtures.
